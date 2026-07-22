@@ -1,0 +1,30 @@
+{
+  "project": "Personal ERP",
+  "version": "1.0-final-design",
+  "defaultLocale": "zh-CN",
+  "defaultTheme": "Iris Operations",
+  "pagination": {
+    "serverSide": true,
+    "defaultPageSize": 20,
+    "allowedPageSizes": [10, 20, 50, 100],
+    "keywordDebounceMs": 300
+  },
+  "onedrive": {
+    "provider": "Microsoft Graph OneDrive Personal",
+    "authority": "https://login.microsoftonline.com/consumers",
+    "flow": "device_code",
+    "delegatedScopes": ["User.Read", "Files.ReadWrite", "offline_access"],
+    "requiresUserClientId": true
+  },
+  "phases": [
+    "infrastructure",
+    "master-data",
+    "inventory",
+    "purchase",
+    "sales",
+    "quality",
+    "finance",
+    "onedrive",
+    "backup-restore"
+  ]
+}

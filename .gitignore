@@ -1,0 +1,16 @@
+node_modules/
+.data/
+.pnpm-store/
+.npm-cache/
+dist/
+coverage/
+playwright-report/
+test-results/
+.env
+*.log
+server/src/generated/
+server/backups/
+server/tmp/
+web/design-qa-captures/
+.DS_Store
+Thumbs.db

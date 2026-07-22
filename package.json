@@ -1,0 +1,29 @@
+{
+  "name": "personal-erp",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "backup:bootstrap-restore": "powershell -ExecutionPolicy Bypass -File scripts/bootstrap-restore.ps1",
+    "dev": "pnpm --parallel --filter @personal-erp/server --filter @personal-erp/web dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "pnpm -r lint",
+    "prisma:format": "pnpm --filter @personal-erp/server prisma:format",
+    "prisma:generate": "pnpm --filter @personal-erp/server prisma:generate",
+    "prisma:migrate": "pnpm --filter @personal-erp/server prisma:migrate",
+    "prisma:validate": "pnpm --filter @personal-erp/server prisma:validate",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @personal-erp/web test:e2e",
+    "test:integration": "pnpm --filter @personal-erp/server test:integration",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "eslint": "^9.37.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.46.1"
+  }
+}

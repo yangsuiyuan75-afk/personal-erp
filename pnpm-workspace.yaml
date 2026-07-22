@@ -1,0 +1,22 @@
+packages:
+  - server
+  - web
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - esbuild
+  - prisma
+
+ignoredBuiltDependencies:
+  - '@scarf/scarf'
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@scarf/scarf': false
+  esbuild: true
+  prisma: true
+  argon2: true
+minimumReleaseAgeExclude:
+  - '@azure/msal-common@16.11.2'
+  - '@azure/msal-node@5.4.1'
