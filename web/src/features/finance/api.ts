@@ -9,9 +9,10 @@ export type FinanceView =
   | 'receipts'
   | 'transactions'
   | 'adjustments'
+  | 'expenses'
   | 'analytics';
 
-export type FinanceListView = Exclude<FinanceView, 'analytics'>;
+export type FinanceListView = Exclude<FinanceView, 'analytics' | 'expenses'>;
 export type FinanceOptionSource =
   'accounts' | 'payables' | 'receivables' | 'refunds' | 'credits' | 'compensation';
 
@@ -76,6 +77,25 @@ export async function listFinanceOptions(source: FinanceOptionSource): Promise<M
   return { ...response.data, data: response.data.data.map((row) => identity(source, row)) };
 }
 
+export interface ExpenseListResponse extends MasterListResponse {
+  summary: {
+    postedAmount: string;
+    pendingAmount: string;
+    billCount: number;
+  };
+}
+
+export async function listExpenseBills(params: ListParams): Promise<ExpenseListResponse> {
+  const response = await apiClient.get<ExpenseListResponse>('/finance/expenses', { params });
+  return {
+    ...response.data,
+    data: response.data.data.map((row) => ({
+      ...identity('adjustments', row),
+      name: String(row.reason ?? row.payee ?? row.adjustmentNo),
+    })),
+  };
+}
+
 export interface FinanceAnalytics {
   summary: Record<
     | 'income'
@@ -130,9 +150,11 @@ export const createReceipt = (payload: Record<string, unknown>) =>
   create('/finance/receipts', payload);
 export const createAdjustment = (payload: Record<string, unknown>) =>
   create('/finance/adjustments', payload);
+export const createExpenseBill = (payload: Record<string, unknown>) =>
+  create('/finance/expenses', payload);
 
 export async function postFinanceDocument(
-  kind: 'payments' | 'receipts' | 'adjustments',
+  kind: 'payments' | 'receipts' | 'adjustments' | 'expenses',
   id: string,
 ): Promise<void> {
   await apiClient.post(`/finance/${kind}/${id}/post`, undefined, {

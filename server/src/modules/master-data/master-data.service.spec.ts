@@ -7,15 +7,25 @@ describe('MasterDataService resource boundary', () => {
     expect(() => service.assertResource('prices')).toThrow('不支持的基础资料类型');
   });
 
-  it('normalizes corrected master-data codes', async () => {
-    const updateData = service as unknown as {
+  it('trims and preserves master-data code casing', async () => {
+    const data = service as unknown as {
+      createData: (
+        resource: 'categories',
+        payload: { code: string; name: string },
+      ) => Promise<Record<string, unknown>>;
       updateData: (
         resource: 'categories',
         payload: { code: string },
       ) => Promise<Record<string, unknown>>;
     };
-    await expect(updateData.updateData('categories', { code: ' cat-002 ' })).resolves.toEqual({
-      code: 'CAT-002',
+    await expect(
+      data.createData('categories', { code: ' cat-aB ', name: '分类' }),
+    ).resolves.toEqual({
+      code: 'cat-aB',
+      name: '分类',
+    });
+    await expect(data.updateData('categories', { code: ' CAT-aB ' })).resolves.toEqual({
+      code: 'CAT-aB',
     });
   });
 });

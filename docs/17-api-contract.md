@@ -81,20 +81,6 @@ POST /receipts/{id}/post
 
 必须接受 `Idempotency-Key`。
 
-## 6. 文件 API
-
-```text
-POST   /files/upload
-GET    /files/{id}
-GET    /files/{id}/content
-DELETE /files/{id}
-
-POST   /onedrive/connect/start
-GET    /onedrive/connect/status
-POST   /onedrive/disconnect
-GET    /onedrive/health
-```
-
 ## 7. 备份 API
 
 ```text
@@ -180,6 +166,7 @@ POST  /purchase/prices
 PATCH /purchase/prices/{id}
 GET   /purchase/orders
 POST  /purchase/orders
+PATCH /purchase/orders/{id}
 POST  /purchase/orders/{id}/confirm
 POST  /purchase/orders/{id}/cancel
 GET   /purchase/receipts
@@ -192,7 +179,9 @@ GET   /purchase/payables
 GET   /purchase/supplier-credits
 ```
 
-采购收货和采购退货过账必须提供 `Idempotency-Key`。订单明细的 `unitPrice` 是成交快照，不从 SKU 或当前报价回读。
+采购列表返回用于展示的 SKU 明细：报价直接返回 `sku`，订单、收货与退货返回 `items[].sku`，应付返回 `purchaseReceipt.items[].sku`，供应商退款返回 `purchaseReturn.items[].sku`。
+
+采购收货和采购退货过账必须提供 `Idempotency-Key`。订单明细的 `unitPrice` 是成交快照，不从 SKU 或当前报价回读。`PATCH /purchase/orders/{id}` 仅允许草稿或已确认且尚未创建收货单的订单；收货单创建后订单内容锁定。
 
 ## 12. 销售 API
 
@@ -207,6 +196,7 @@ POST  /sales/orders/{id}/confirm
 POST  /sales/orders/{id}/cancel
 GET   /sales/issues
 POST  /sales/issues
+PATCH /sales/issues/{id}
 POST  /sales/issues/{id}/post
 GET   /sales/returns
 POST  /sales/returns
@@ -215,7 +205,11 @@ GET   /sales/receivables
 GET   /sales/customer-refunds
 ```
 
+销售列表返回用于展示的 SKU 明细：价格直接返回 `sku`，订单、出库与退货返回 `items[].sku`，应收返回 `salesIssue.items[].sku`，客户退款返回 `salesReturn.items[].sku`。
+
 销售出库和销售退货过账必须提供 `Idempotency-Key`。销售退货接收地点必须为启用的 `QC_AREA`，库存状态固定为 `QC_PENDING`，API 不提供直接回到 `AVAILABLE` 的路径。
+
+`POST /sales/orders` 会按订单明细创建草稿销售出库单。`PATCH /sales/issues/{id}` 仅允许编辑草稿，要求提供出库地点；销售数量和销售日期可省略，分别默认对应订单的未出库数量和订单日期。
 
 ## 13. 质量与供应商索赔 API
 
@@ -252,34 +246,30 @@ POST  /finance/receipts/{id}/post
 GET   /finance/adjustments
 POST  /finance/adjustments
 POST  /finance/adjustments/{id}/post
+GET   /finance/expenses
+POST  /finance/expenses
+POST  /finance/expenses/{id}/post
 GET   /finance/transactions
 GET   /finance/analytics
 ```
 
-付款、收款和账户调整过账必须提供 `Idempotency-Key`。财务列表支持 `month`、`accountId`、`salesChannelId`、`customerId`、`supplierId`、`purchaseChannelId`、`buyerId`、`direction` 和 `category`。账户列表返回的 `balance` 是资金流水实时汇总值。
+付款、收款、账户调整和日常开销过账必须提供 `Idempotency-Key`。财务列表支持 `month`、`accountId`、`salesChannelId`、`customerId`、`supplierId`、`purchaseChannelId`、`buyerId`、`direction` 和 `category`；开销账单额外支持 `expenseCategory`。账户列表返回的 `balance` 是资金流水实时汇总值。
 
-## 15. 文件与 OneDrive API
+## 15. OneDrive 设置 API
 
 ```text
-GET    /files
-GET    /files/export
-POST   /files                              multipart: file + logicalPath
-GET    /files/{id}
-GET    /files/{id}/content
-POST   /files/{id}/retry
-DELETE /files/{id}
-
-GET    /files/products/{productId}/images
-POST   /files/products/{productId}/images multipart: files[] + isPrimary
-PATCH  /files/products/{productId}/images/reorder
-POST   /files/products/{productId}/images/{imageId}/primary
-DELETE /files/products/{productId}/images/{imageId}
-
 GET    /onedrive/status
 POST   /onedrive/connect/start
 DELETE /onedrive/connection
 ```
 
-通用文件删除前检查 ProductImage 和 FileAssociation 引用；商品图片必须从商品图库删除。内容
-接口由后端读取 Provider 并返回 Content-Type、ETag、Cache-Control 和 Content-Disposition。
-OneDrive 状态及授权接口不得返回 Access Token、Refresh Token 或序列化 MSAL Cache。
+OneDrive 状态及授权接口不得返回 Access Token、Refresh Token 或序列化 MSAL Cache。除备份 API 外，仅提供产品图片专用接口：
+
+```text
+GET    /files/products/{productId}/images
+POST   /files/products/{productId}/images
+DELETE /files/products/{productId}/images/{imageId}
+GET    /files/products/{productId}/images/{fileAssetId}/content
+```
+
+不提供通用 `/files` 列表、上传、下载或重试接口。

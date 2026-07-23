@@ -51,13 +51,7 @@ describe('Phase 5 quality API (e2e)', () => {
       prisma.supplier.create({
         data: { code: 'QCE-SUP', name: '质检供应商', purchaseChannelId: purchaseChannel.id },
       }),
-      prisma.buyer.create({
-        data: {
-          code: 'QCE-BUY',
-          name: '质检采购员',
-          channels: { create: { purchaseChannelId: purchaseChannel.id } },
-        },
-      }),
+      prisma.buyer.create({ data: { code: 'QCE-BUY', name: '质检采购员' } }),
       prisma.product.create({
         data: { code: 'QCE-PROD', name: '质检商品', categoryId: category.id },
       }),

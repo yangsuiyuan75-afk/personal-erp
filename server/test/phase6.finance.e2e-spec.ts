@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { FinancialTransactionCategory, PrismaClient } from '@prisma/client';
+import { ExpenseCategory, FinancialTransactionCategory, PrismaClient } from '@prisma/client';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
@@ -189,5 +189,50 @@ describe('Phase 6 finance API (e2e)', () => {
     });
     expect(analytics.body.data.dimensions.salesChannels[0]).toMatchObject({ amount: '40' });
     expect(analytics.body.data.dimensions.suppliers[0]).toMatchObject({ amount: '30' });
+  });
+
+  it('creates and posts a daily expense bill into the finance summary', async () => {
+    const auth = { Authorization: `Bearer ${token}` };
+    const bill = await request(app.getHttpServer())
+      .post('/api/v1/finance/expenses')
+      .set(auth)
+      .send({
+        accountId,
+        expenseCategory: ExpenseCategory.QUALIFICATION,
+        reason: '营业执照年审服务',
+        payee: '企业服务中心',
+        amount: '68',
+        occurredAt: '2026-07-22T00:00:00.000Z',
+      })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post(`/api/v1/finance/expenses/${bill.body.data.id}/post`)
+      .set(auth)
+      .set('Idempotency-Key', 'fine-expense-bill')
+      .expect(201);
+
+    const expenses = await request(app.getHttpServer())
+      .get(
+        '/api/v1/finance/expenses?month=2026-07&page=1&pageSize=20&sortBy=occurredAt&sortOrder=desc',
+      )
+      .set(auth)
+      .expect(200);
+    expect(expenses.body.data[0]).toMatchObject({
+      adjustmentNo: expect.stringMatching(/^EXP-/),
+      expenseCategory: 'QUALIFICATION',
+      status: 'POSTED',
+      amount: '68',
+    });
+    expect(expenses.body.summary).toMatchObject({
+      postedAmount: '68',
+      pendingAmount: '0',
+      billCount: 1,
+    });
+    const transaction = await prisma.financialTransaction.findUniqueOrThrow({
+      where: {
+        sourceType_sourceId: { sourceType: 'EXPENSE_BILL', sourceId: bill.body.data.id },
+      },
+    });
+    expect(transaction.category).toBe(FinancialTransactionCategory.OTHER_EXPENSE);
   });
 });

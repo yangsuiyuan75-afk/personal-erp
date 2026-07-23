@@ -107,7 +107,7 @@
 - type
 - status
 
-Buyer 与 PurchaseChannel 使用关联表，多对多。
+Buyer 不关联 PurchaseChannel；采购订单分别保存采购员和采购渠道。Migration `202607220001_remove_buyer_purchase_channel` 删除已废弃的 `BuyerPurchaseChannel` 关联表。
 
 ### SalesChannel
 
@@ -297,7 +297,7 @@ Phase 4 实际模型同时包含：
 
 - `SalesPrice`：支持客户专属价、渠道价和默认价，按起售量及生效区间解析；
 - `SalesOrder / SalesOrderItem`：客户与渠道独立引用，订单明细保存 `unitPrice` 和金额快照；
-- `SalesIssue / SalesIssueItem`：支持分批出库，保存收入、移动平均单位成本、成本金额及库存流水行；
+- `SalesIssue / SalesIssueItem`：支持分批出库，保存收入、移动平均单位成本、成本金额及库存流水行；创建销售订单时按订单明细预创建草稿出库单，草稿可暂不指定 `locationId`，过账前必须补齐；
 - `SalesReturn / SalesReturnItem`：必须引用原出库明细，实物接收固定进入 `QC_PENDING`；
 - `SalesReturnBatchTrace`：延续原出库的 FIFO 批次来源，不在质检前增加可售批次数量；
 - `Receivable / ReceivableAdjustment`：出库生成应收，退货先冲减未收余额；
@@ -411,7 +411,7 @@ Phase 5 Migrations：
 - `Receivable`：保存原始、调整、实收和未收金额；
 - `Payment / PaymentAllocation`：付款单可分配多个同类应付或客户退款；应付分配可同时使用 Supplier Credit；
 - `Receipt / ReceiptAllocation`：收款单可分配多个销售应收或多个供应商赔付应收，但同一收款单不得混用两类；
-- `AccountAdjustment`：账户期初、平台费、物流费、其他收支和账户修正，过账后形成资金流水；
+- `AccountAdjustment`：账户期初、平台费、物流费、其他收支和账户修正；日常开销账单复用该过账内核，并通过 `expenseCategory` 与 `payee` 保存账单分类和收款方；
 - `FinancialTransaction`：保存资金账户、流入/流出、业务分类、金额、来源单据及销售渠道、客户、供应商、采购渠道、采购员维度快照。
 
 FinancialTransaction 是真实资金流水，不等同于应收应付。
@@ -431,10 +431,13 @@ Phase 6 Migrations：
 - `202607160009_phase6_finance`；
 - `202607160010_phase6_payable_credit`。
 
+日常开销扩展 Migration：`202607220002_daily_expense_bills`，新增 `ExpenseCategory` 及 `AccountAdjustment.expenseCategory / payee`。日常开销过账后以 `EXPENSE_BILL` 来源生成 `OTHER_EXPENSE` 资金流水。
+
 ## 10. 文件与备份
 
 ### FileAsset
 
+- 仅供备份模块、ProductImage 和内部 StorageProvider 使用；不提供通用浏览器文件资产接口；
 - id UUID
 - provider：`ONEDRIVE` 或 `MOCK_LOCAL`
 - driveId
@@ -458,13 +461,12 @@ Phase 6 Migrations：
 - isPrimary
 - sortOrder
 
-`productId + sortOrder` 唯一；主图唯一性由事务内先清除后设置的业务约束保证。删除主图后，
-按 sortOrder 自动把首张剩余图片设为主图。
+产品图片通过 FileService 和 StorageProvider 上传；每个 Product 最多 12 张，第一张默认为主图。数据库只保存 FileAsset 关联和排序元数据，不保存图片 URL、绝对路径或二进制。
 
 ### FileAssociation
 
-用于采购、销售、质量和财务附件，保存 fileAssetId、module、entityType、entityId 和可选
-label；`fileAssetId + module + entityType + entityId` 唯一。
+保留给内部备份文件关联，保存 fileAssetId、module、entityType、entityId 和可选 label；
+`fileAssetId + module + entityType + entityId` 唯一。不再作为业务附件 API。
 
 Phase 7 Migration：`202607160011_phase7_files`。
 

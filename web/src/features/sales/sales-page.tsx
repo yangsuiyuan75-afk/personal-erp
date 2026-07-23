@@ -6,6 +6,7 @@ import { Input, Select } from '@/components/ui/field';
 import type { MasterRow } from '@/features/master-data/api';
 import { useListUrlState } from '@/features/master-data/use-list-url-state';
 import { apiErrorMessage } from '@/lib/api-error';
+import { enumLabel } from '@/lib/enum-label';
 import type { SalesView } from './api';
 import { SalesDialogs, type SalesDialogKind } from './sales-dialogs';
 import { useSalesList, useSalesMutations } from './use-sales';
@@ -55,11 +56,55 @@ function money(value: unknown) {
   return `¥${Number(value ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+export function sumSalesQuantity(row: MasterRow) {
+  return salesItems(row).reduce((total, item) => {
+    if (!item || typeof item !== 'object') return total;
+    const value = Number((item as { quantity?: unknown }).quantity ?? 0);
+    return total + (Number.isFinite(value) ? value : 0);
+  }, 0);
+}
+
+type SalesItem = { sku?: { code?: unknown; name?: unknown }; quantity?: unknown };
+
+function salesItems(row: MasterRow): SalesItem[] {
+  const items = [
+    row.items,
+    (row.salesIssue as { items?: unknown } | undefined)?.items,
+    (row.salesReturn as { items?: unknown } | undefined)?.items,
+  ].find(Array.isArray);
+  if (Array.isArray(items)) return items as SalesItem[];
+  const sku = row.sku;
+  return sku && typeof sku === 'object'
+    ? [{ sku: sku as SalesItem['sku'], quantity: row.minQuantity }]
+    : [];
+}
+
+function salesSku(row: MasterRow) {
+  const labels = salesItems(row)
+    .map((item) =>
+      [String(item.sku?.code ?? ''), String(item.sku?.name ?? '')].filter(Boolean).join(' · '),
+    )
+    .filter(Boolean);
+  return labels.length ? (
+    <div className="business-sku-summary">
+      {labels.map((label) => (
+        <span key={label}>{label}</span>
+      ))}
+    </div>
+  ) : (
+    '—'
+  );
+}
+
+function quantity(value: number) {
+  return value.toLocaleString('zh-CN', { maximumFractionDigits: 6 });
+}
+
 function status(row: MasterRow) {
   const value = String(row.status);
   return (
     <span className={`business-status business-${value.toLowerCase()}`}>
-      {statusText[value] ?? value}
+      {statusText[value] ?? enumLabel(value)}
     </span>
   );
 }
@@ -67,12 +112,16 @@ function status(row: MasterRow) {
 function columns(view: SalesView): DataTableColumn[] {
   if (view === 'prices')
     return [
-      { key: 'sku.code', label: 'SKU', sortable: false },
-      { key: 'sku.name', label: '商品', sortable: false },
+      { key: 'sku', label: 'SKU · 名称', render: salesSku, sortable: false },
+      {
+        key: 'minQuantity',
+        label: '销售数量（起售量）',
+        render: (row) => quantity(Number(row.minQuantity ?? 0)),
+        sortable: false,
+      },
       { key: 'customer.name', label: '客户', sortable: false },
       { key: 'salesChannel.name', label: '销售渠道', sortable: false },
       { key: 'price', label: '售价', render: (row) => money(row.price) },
-      { key: 'minQuantity', label: '起售量' },
       { key: 'effectiveFrom', label: '生效时间' },
       { key: 'effectiveTo', label: '失效时间', sortable: false },
       { key: 'status', label: '状态', render: status, sortable: false },
@@ -80,12 +129,13 @@ function columns(view: SalesView): DataTableColumn[] {
   if (view === 'orders')
     return [
       { key: 'orderNo', label: '销售单号' },
+      { key: 'skuSummary', label: 'SKU · 名称', render: salesSku, sortable: false },
       { key: 'salesChannel.name', label: '销售渠道', sortable: false },
       { key: 'customer.name', label: '客户', sortable: false },
       {
-        key: 'items',
-        label: 'SKU 行数',
-        render: (row) => String((row.items as unknown[] | undefined)?.length ?? 0),
+        key: 'salesQuantity',
+        label: '销售数量',
+        render: (row) => quantity(sumSalesQuantity(row)),
         sortable: false,
       },
       { key: 'totalAmount', label: '订单金额', render: (row) => money(row.totalAmount) },
@@ -95,10 +145,17 @@ function columns(view: SalesView): DataTableColumn[] {
   if (view === 'issues')
     return [
       { key: 'issueNo', label: '出库单号', sortable: false },
+      { key: 'skuSummary', label: 'SKU · 名称', render: salesSku, sortable: false },
       { key: 'salesOrder.orderNo', label: '销售订单', sortable: false },
       { key: 'salesChannel.name', label: '销售渠道', sortable: false },
       { key: 'customer.name', label: '客户', sortable: false },
       { key: 'location.name', label: '出库地点', sortable: false },
+      {
+        key: 'salesQuantity',
+        label: '销售数量',
+        render: (row) => quantity(sumSalesQuantity(row)),
+        sortable: false,
+      },
       { key: 'totalRevenue', label: '销售收入', render: (row) => money(row.totalRevenue) },
       {
         key: 'totalCost',
@@ -112,9 +169,16 @@ function columns(view: SalesView): DataTableColumn[] {
   if (view === 'returns')
     return [
       { key: 'returnNo', label: '退货单号', sortable: false },
+      { key: 'skuSummary', label: 'SKU · 名称', render: salesSku, sortable: false },
       { key: 'salesIssue.issueNo', label: '原出库单', sortable: false },
       { key: 'customer.name', label: '客户', sortable: false },
       { key: 'qcLocation.name', label: '待检地点', sortable: false },
+      {
+        key: 'salesQuantity',
+        label: '销售数量',
+        render: (row) => quantity(sumSalesQuantity(row)),
+        sortable: false,
+      },
       { key: 'reason', label: '退货原因', sortable: false },
       { key: 'totalRefund', label: '退款金额', render: (row) => money(row.totalRefund) },
       { key: 'status', label: '状态', render: status, sortable: false },
@@ -123,8 +187,15 @@ function columns(view: SalesView): DataTableColumn[] {
   if (view === 'receivables')
     return [
       { key: 'receivableNo', label: '应收编号', sortable: false },
+      { key: 'skuSummary', label: 'SKU · 名称', render: salesSku, sortable: false },
       { key: 'customer.name', label: '客户', sortable: false },
       { key: 'salesChannel.name', label: '销售渠道', sortable: false },
+      {
+        key: 'salesQuantity',
+        label: '销售数量',
+        render: (row) => quantity(sumSalesQuantity(row)),
+        sortable: false,
+      },
       { key: 'originalAmount', label: '原始应收', render: (row) => money(row.originalAmount) },
       {
         key: 'adjustedAmount',
@@ -148,9 +219,16 @@ function columns(view: SalesView): DataTableColumn[] {
     ];
   return [
     { key: 'refundNo', label: '退款编号', sortable: false },
+    { key: 'skuSummary', label: 'SKU · 名称', render: salesSku, sortable: false },
     { key: 'customer.name', label: '客户', sortable: false },
     { key: 'salesChannel.name', label: '销售渠道', sortable: false },
     { key: 'salesReturn.returnNo', label: '销售退货单', sortable: false },
+    {
+      key: 'salesQuantity',
+      label: '销售数量',
+      render: (row) => quantity(sumSalesQuantity(row)),
+      sortable: false,
+    },
     { key: 'amount', label: '应退金额', render: (row) => money(row.amount) },
     { key: 'paidAmount', label: '已退金额', render: (row) => money(row.paidAmount) },
     { key: 'status', label: '状态', render: status, sortable: false },
@@ -176,6 +254,7 @@ export function SalesPage() {
   const list = useSalesList(view, queryParams);
   const mutations = useSalesMutations();
   const [dialog, setDialog] = useState<SalesDialogKind>();
+  const [issue, setIssue] = useState<MasterRow>();
   const rows = list.data?.data ?? [];
   const total = rows.reduce(
     (sum, row) =>
@@ -194,7 +273,6 @@ export function SalesPage() {
   const actionForView: Partial<Record<SalesView, SalesDialogKind>> = {
     prices: 'price',
     orders: 'order',
-    issues: 'issue',
     returns: 'return',
   };
   return (
@@ -206,15 +284,14 @@ export function SalesPage() {
           <p>客户与渠道独立建模；出库锁定移动平均成本，退货统一进入待质检。</p>
         </div>
         {actionForView[view] ? (
-          <Button onClick={() => setDialog(actionForView[view])}>
+          <Button
+            onClick={() => {
+              setIssue(undefined);
+              setDialog(actionForView[view]);
+            }}
+          >
             <Plus size={17} />{' '}
-            {view === 'orders'
-              ? '新建销售订单'
-              : view === 'issues'
-                ? '销售出库'
-                : view === 'returns'
-                  ? '销售退货'
-                  : '新增售价'}
+            {view === 'orders' ? '新建销售订单' : view === 'returns' ? '销售退货' : '新增售价'}
           </Button>
         ) : null}
       </header>
@@ -290,12 +367,17 @@ export function SalesPage() {
                   <ClipboardCheck size={16} />
                 </button>
               ) : null}
-              {view === 'issues' && row.status === 'DRAFT' ? (
+              {view === 'issues' &&
+              row.status === 'DRAFT' &&
+              ['CONFIRMED', 'PARTIALLY_ISSUED'].includes(
+                String((row.salesOrder as MasterRow | undefined)?.status),
+              ) ? (
                 <button
-                  aria-label={`过账 ${row.code}`}
-                  onClick={() =>
-                    mutations.transition.mutate({ kind: 'issues', id: row.id, action: 'post' })
-                  }
+                  aria-label={`销售出库 ${row.code}`}
+                  onClick={() => {
+                    setIssue(row);
+                    setDialog('issue');
+                  }}
                   type="button"
                 >
                   <PackageMinus size={16} />
@@ -332,7 +414,14 @@ export function SalesPage() {
           sortOrder={queryParams.sortOrder}
         />
       </div>
-      <SalesDialogs active={dialog} onOpenChange={setDialog} />
+      <SalesDialogs
+        active={dialog}
+        issue={issue}
+        onOpenChange={(next) => {
+          setDialog(next);
+          if (!next) setIssue(undefined);
+        }}
+      />
     </section>
   );
 }

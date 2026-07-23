@@ -4,7 +4,8 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
   page,
 }) => {
   let activationPayload: unknown;
-  let productImageUploaded = false;
+  let holdCategoryList = true;
+  let productUpdateRequests = 0;
   let productPayload: unknown;
   let skuPayload: unknown;
   let skuRow: Record<string, unknown> | undefined;
@@ -33,8 +34,10 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
       }),
     }),
   );
-  await page.route('**/api/v1/master-data/categories*', (route) =>
-    route.fulfill({
+  let releaseCategoryList: (() => void) | undefined;
+  await page.route('**/api/v1/master-data/categories*', async (route) => {
+    if (holdCategoryList) await new Promise<void>((resolve) => (releaseCategoryList = resolve));
+    return route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
         data: [
@@ -55,9 +58,9 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
           hasNextPage: false,
         },
       }),
-    }),
-  );
-  await page.route('**/api/v1/master-data/products*', (route) => {
+    });
+  });
+  await page.route('**/api/v1/master-data/products**', (route) => {
     if (route.request().method() === 'POST') {
       productPayload = route.request().postDataJSON();
       return route.fulfill({
@@ -71,6 +74,22 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
         }),
       });
     }
+    if (route.request().method() === 'PATCH') {
+      productUpdateRequests += 1;
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            id: '33333333-3333-4333-8333-333333333333',
+            code: 'PROD-001',
+            name: 'Test product',
+            categoryId: '22222222-2222-4222-8222-222222222222',
+            category: { id: '22222222-2222-4222-8222-222222222222', name: '家居收纳' },
+            status: 'ACTIVE',
+          },
+        }),
+      });
+    }
     return route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -79,6 +98,8 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
             id: '33333333-3333-4333-8333-333333333333',
             code: 'PROD-001',
             name: 'Test product',
+            categoryId: '22222222-2222-4222-8222-222222222222',
+            category: { id: '22222222-2222-4222-8222-222222222222', name: '家居收纳' },
             status: 'ACTIVE',
           },
         ],
@@ -93,25 +114,6 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
       }),
     });
   });
-  await page.route(
-    '**/api/v1/files/products/66666666-6666-4666-8666-666666666666/images',
-    (route) => {
-      if (route.request().method() === 'POST') productImageUploaded = true;
-      return route.fulfill({
-        contentType: 'application/json',
-        body: JSON.stringify({
-          data: {
-            product: {
-              id: '66666666-6666-4666-8666-666666666666',
-              code: 'PROD-002',
-              name: 'Image product',
-            },
-            images: [],
-          },
-        }),
-      });
-    },
-  );
   await page.route('**/api/v1/master-data/units*', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -190,7 +192,6 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
             code: 'BUYER-001',
             name: '采购员 A',
             phone: '13800000000',
-            channels: [],
             status: buyerStatus,
           },
         ],
@@ -208,7 +209,29 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
 
   await page.goto('/master/categories');
   await expect(page.getByRole('heading', { name: '商品类目' })).toBeVisible();
+  await expect.poll(() => Boolean(releaseCategoryList)).toBe(true);
+  const requestLoadingIndicator = page.locator('.request-loading-indicator');
+  await expect(requestLoadingIndicator).toBeVisible();
+  expect(
+    await requestLoadingIndicator.evaluate(
+      (indicator) =>
+        indicator.parentElement === document.body &&
+        getComputedStyle(indicator).zIndex === '2147483647',
+    ),
+  ).toBe(true);
+  holdCategoryList = false;
+  releaseCategoryList?.();
+  await expect(requestLoadingIndicator).toBeHidden();
   await expect(page.getByRole('cell', { name: '家居收纳', exact: true })).toBeVisible();
+  await expect(page.locator('.filter-bar')).toHaveCSS('min-height', '52px');
+  await expect(page.getByRole('button', { name: '新增商品类目' })).toHaveCSS('min-height', '34px');
+  expect(
+    await page.getByRole('textbox', { name: '关键字搜索' }).evaluate((input) => {
+      const context = document.createElement('canvas').getContext('2d')!;
+      context.font = getComputedStyle(input).font;
+      return context.measureText(input.placeholder).width <= input.clientWidth;
+    }),
+  ).toBe(true);
   await page.getByRole('textbox', { name: '关键字搜索' }).fill('家居');
   await expect(page).toHaveURL(/keyword=%E5%AE%B6%E5%B1%85/);
   const createdFrom = page.locator('.date-range-picker input').first();
@@ -229,11 +252,11 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
   await expect(productCenterLinks.nth(0)).toHaveAttribute('href', '/master/categories');
   await expect(productCenterLinks.nth(1)).toHaveAttribute('href', '/master/products');
   await page.locator('a[href="/master/products"]').click();
-  await expect(page.getByLabel('暂无产品图片')).toBeVisible();
   await page.getByRole('button', { name: '查看 Test product' }).click();
-  await expect(page.locator('.expanded-row')).toContainText('商品名称');
-  await expect(page.locator('.expanded-row')).toContainText('Test product');
-  await page.getByRole('button', { name: '查看 Test product' }).click();
+  const detailDialog = page.locator('.data-table-detail-dialog');
+  await expect(detailDialog).toContainText('商品名称');
+  await expect(detailDialog).toContainText('Test product');
+  await detailDialog.getByRole('button', { name: '关闭' }).click();
   await page.locator('button.button-primary').click();
   const productDialog = page.locator('.dialog-popup');
   await expect(productDialog.locator('input').first()).toBeEditable();
@@ -242,20 +265,14 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
   await productDialog.locator('input').nth(1).fill('Image product');
   await productDialog.getByRole('combobox').click();
   await page.locator('.select-popup:visible .select-item').nth(1).click();
-  await productDialog.locator('.product-image-editor input[type="file"]').setInputFiles({
-    name: 'main.png',
-    mimeType: 'image/png',
-    buffer: Buffer.from('product-image'),
-  });
-  await expect(productDialog.getByText('已选择 1 张图片')).toBeVisible();
-  await expect(productDialog.locator('.product-image-card.pending img')).toBeVisible();
-  await productDialog.getByRole('button', { name: '预览 main.png', exact: true }).click();
-  await expect(page.locator('.yarl__portal_open')).toBeVisible();
-  await page.locator('.yarl__portal_open').getByRole('button', { name: 'Close' }).click();
-  await expect(page.locator('.yarl__portal_open')).toHaveCount(0);
   await productDialog.locator('button[type="submit"]').click();
   expect(productPayload).toMatchObject({ code: 'PROD-002', name: 'Image product' });
-  await expect.poll(() => productImageUploaded).toBe(true);
+
+  await page.getByRole('button', { name: '编辑 Test product' }).click();
+  await expect(productDialog.locator('select')).toHaveValue('22222222-2222-4222-8222-222222222222');
+  expect(await productDialog.locator('form').evaluate((form) => form.checkValidity())).toBe(true);
+  await productDialog.locator('button[type="submit"]').click();
+  await expect.poll(() => productUpdateRequests).toBe(1);
 
   await page.goto('/master/skus');
   await page.locator('button.button-primary').click();
@@ -277,13 +294,18 @@ test('restores the session, keeps list search in the URL, and reactivates a buye
   expect(skuPayload).toMatchObject({ attributes: { 颜色: '黑色' }, weight: null });
   await expect(page.getByRole('cell', { name: 'Test SKU', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '查看 Test SKU' }).click();
-  await expect(page.locator('.expanded-row')).toContainText('颜色：黑色');
+  await expect(detailDialog).toContainText('颜色：黑色');
+  await detailDialog.getByRole('button', { name: '关闭' }).click();
   await page.getByRole('button', { name: '编辑 Test SKU' }).click();
   await expect(skuDialog.getByLabel('属性名 1')).toHaveValue('颜色');
   await expect(skuDialog.getByLabel('属性值 1')).toHaveValue('黑色');
   await skuDialog.getByRole('button', { name: '关闭' }).click();
 
   await page.goto('/master/buyers');
+  await page.getByRole('button', { name: '新增采购员' }).click();
+  const buyerDialog = page.locator('.dialog-popup');
+  await expect(buyerDialog.getByText('采购渠道', { exact: true })).toHaveCount(0);
+  await buyerDialog.getByRole('button', { name: '关闭' }).click();
   await page.getByRole('button', { name: '启用 采购员 A' }).click();
   await page.getByRole('button', { name: '确认启用' }).click();
   await expect(page.getByText('资料已启用')).toBeVisible();

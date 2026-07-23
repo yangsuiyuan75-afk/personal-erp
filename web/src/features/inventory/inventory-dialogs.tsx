@@ -96,7 +96,7 @@ export function LocationDialog({
   };
   return (
     <DialogShell
-      description="平台仓必须关联 EXTERNAL_WAREHOUSE 模式的销售渠道。"
+      description="平台仓必须关联“外部平台仓”库存模式的销售渠道。"
       onOpenChange={onOpenChange}
       open={open}
       title="新增库存地点"
@@ -204,7 +204,7 @@ export function OpeningDialog({
   };
   return (
     <DialogShell
-      description="上传后先逐行校验；确认后生成不可编辑的 OPENING_IN 库存流水。"
+      description="上传后先逐行校验；确认后生成不可编辑的期初入库库存流水。"
       onOpenChange={onOpenChange}
       open={open}
       title="导入期初库存"
@@ -570,5 +570,5 @@ export function InventoryDialogs({
       />,
     ],
   ];
-  return <>{dialogs.map(([, dialog]) => dialog)}</>;
+  return <>{dialogs.find(([kind]) => kind === active)?.[1]}</>;
 }

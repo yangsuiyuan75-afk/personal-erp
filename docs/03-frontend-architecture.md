@@ -22,7 +22,7 @@ web/src/
 │  ├─ sales/
 │  ├─ quality/
 │  ├─ finance/
-│  ├─ files/
+│  ├─ files/                 # OneDrive 设置状态与授权操作
 │  └─ settings/
 ├─ lib/
 │  ├─ axios/
@@ -47,6 +47,8 @@ web/src/
 - API 错误映射；
 - 下载流处理；
 - 取消请求。
+
+Axios 请求拦截器统一维护进行中的请求数量；任一 API 请求期间显示全局加载指示，避免页面对网络操作没有反馈。
 
 上传和备份允许单独设置更长超时。
 

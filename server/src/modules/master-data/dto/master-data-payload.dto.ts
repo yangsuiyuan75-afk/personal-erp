@@ -1,7 +1,5 @@
 import { Type } from 'class-transformer';
 import {
-  ArrayUnique,
-  IsArray,
   IsDecimal,
   IsEnum,
   IsInt,
@@ -95,12 +93,6 @@ export class MasterDataPayloadDto {
   @IsOptional()
   @IsUUID()
   purchaseChannelId?: string;
-
-  @IsOptional()
-  @IsArray()
-  @ArrayUnique()
-  @IsUUID('4', { each: true })
-  purchaseChannelIds?: string[];
 
   @IsOptional()
   @IsEnum(ChannelInventoryMode)

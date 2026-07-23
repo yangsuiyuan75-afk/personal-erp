@@ -34,11 +34,11 @@ export function Field({
 }
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn('input', className)} {...props} />;
+  return <input {...props} autoComplete="off" className={cn('input', className)} />;
 }
 
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn('input textarea', className)} {...props} />;
+  return <textarea {...props} autoComplete="off" className={cn('input textarea', className)} />;
 }
 
 type SelectValue = string | string[];
@@ -142,7 +142,10 @@ export const Select = forwardRef<
           disabled={props.disabled}
           onBlur={notifyBlur}
         >
-          <BaseSelect.Value placeholder={placeholder ?? options[0]?.label ?? '请选择'} />
+          <BaseSelect.Value
+            className="select-value"
+            placeholder={placeholder ?? options[0]?.label ?? '请选择'}
+          />
           <BaseSelect.Icon>
             <ChevronDown aria-hidden size={16} />
           </BaseSelect.Icon>

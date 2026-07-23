@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ListParams } from '@/features/master-data/api';
 import {
-  createSalesIssue,
   createSalesOrder,
   createSalesPrice,
   createSalesReturn,
   listSales,
   transitionSales,
   type SalesView,
+  updateSalesIssue,
 } from './api';
 
 const salesKeys = {
@@ -42,7 +42,11 @@ export function useSalesMutations() {
   return {
     price: useMutation({ mutationFn: createSalesPrice, onSuccess: refresh }),
     order: useMutation({ mutationFn: createSalesOrder, onSuccess: refresh }),
-    issue: useMutation({ mutationFn: createSalesIssue, onSuccess: refresh }),
+    issue: useMutation({
+      mutationFn: ({ id, ...payload }: { id: string } & Record<string, unknown>) =>
+        updateSalesIssue(id, payload),
+      onSuccess: refresh,
+    }),
     returned: useMutation({ mutationFn: createSalesReturn, onSuccess: refresh }),
     transition: useMutation({
       mutationFn: (input: {

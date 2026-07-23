@@ -1,9 +1,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import {
   createMasterData,
   deactivateMasterData,
+  deleteProductImage,
+  getProductImageBlob,
+  getProductImages,
   listMasterData,
   updateMasterData,
+  uploadProductImages,
   type ListParams,
 } from './api';
 import { queryKeys } from './query-keys';
@@ -48,6 +53,56 @@ export function useMasterMutations(resource: string) {
     deactivate: useMutation({
       mutationFn: (id: string) => deactivateMasterData(resource, id),
       onSuccess: invalidate,
+    }),
+  };
+}
+
+const productImageKey = (productId?: string) => ['product-images', productId] as const;
+
+export function useProductImages(productId?: string) {
+  return useQuery({
+    queryKey: productImageKey(productId),
+    queryFn: () => getProductImages(productId!),
+    enabled: Boolean(productId),
+  });
+}
+
+export function useProductImageUrl(productId?: string, fileAssetId?: string) {
+  const query = useQuery({
+    queryKey: [...productImageKey(productId), fileAssetId],
+    queryFn: () => getProductImageBlob(productId!, fileAssetId!),
+    enabled: Boolean(productId && fileAssetId),
+    staleTime: 5 * 60_000,
+  });
+  const [url, setUrl] = useState<string>();
+  useEffect(() => {
+    if (!query.data) {
+      setUrl(undefined);
+      return;
+    }
+    const next = URL.createObjectURL(query.data);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [query.data]);
+  return { ...query, url };
+}
+
+export function useProductImageMutations() {
+  const client = useQueryClient();
+  const refresh = (productId: string) => {
+    client.invalidateQueries({ queryKey: productImageKey(productId) });
+    client.invalidateQueries({ queryKey: ['master-data', 'products'] });
+  };
+  return {
+    upload: useMutation({
+      mutationFn: ({ productId, files }: { productId: string; files: File[] }) =>
+        uploadProductImages(productId, files),
+      onSuccess: (_, { productId }) => refresh(productId),
+    }),
+    remove: useMutation({
+      mutationFn: ({ productId, imageId }: { productId: string; imageId: string }) =>
+        deleteProductImage(productId, imageId),
+      onSuccess: (_, { productId }) => refresh(productId),
     }),
   };
 }

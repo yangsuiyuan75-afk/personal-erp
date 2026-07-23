@@ -65,7 +65,6 @@ export async function cleanDatabase(prisma: PrismaClient): Promise<void> {
     prisma.category.deleteMany(),
     prisma.unit.deleteMany(),
     prisma.supplier.deleteMany(),
-    prisma.buyerPurchaseChannel.deleteMany(),
     prisma.buyer.deleteMany(),
     prisma.purchaseChannel.deleteMany(),
     prisma.customer.deleteMany(),

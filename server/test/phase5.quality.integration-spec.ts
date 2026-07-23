@@ -51,13 +51,7 @@ describe('Phase 5 quality and supplier claim integration', () => {
       prisma.supplier.create({
         data: { code: 'QC-SUP', name: '质量供应商', purchaseChannelId: purchaseChannel.id },
       }),
-      prisma.buyer.create({
-        data: {
-          code: 'QC-BUY',
-          name: '质量采购员',
-          channels: { create: { purchaseChannelId: purchaseChannel.id } },
-        },
-      }),
+      prisma.buyer.create({ data: { code: 'QC-BUY', name: '质量采购员' } }),
       prisma.product.create({
         data: { code: 'QC-PROD', name: '质量商品', categoryId: category.id },
       }),

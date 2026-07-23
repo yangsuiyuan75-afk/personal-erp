@@ -41,13 +41,7 @@ describe('Phase 3 purchase integration', () => {
       prisma.supplier.create({
         data: { code: 'SUP-P3', name: '测试供应商', purchaseChannelId: channel.id },
       }),
-      prisma.buyer.create({
-        data: {
-          code: 'BUY-P3',
-          name: '测试采购员',
-          channels: { create: { purchaseChannelId: channel.id } },
-        },
-      }),
+      prisma.buyer.create({ data: { code: 'BUY-P3', name: '测试采购员' } }),
       prisma.product.create({
         data: { code: 'PROD-P3', name: '采购商品', categoryId: category.id },
       }),
@@ -242,5 +236,38 @@ describe('Phase 3 purchase integration', () => {
     expect(credit.amount.toString()).toBe('20');
     expect(batch.remainingQuantity.toString()).toBe('4');
     expect(balance.onHandQuantity.toString()).toBe('8');
+  });
+
+  it('allows a confirmed order to be corrected before the first receipt', async () => {
+    const order = await purchase.createOrder(
+      {
+        supplierId,
+        buyerId,
+        purchaseChannelId: channelId,
+        currency: 'CNY',
+        orderDate: '2026-07-17T00:00:00.000Z',
+        items: [{ skuId, quantity: '5', unitPrice: '11' }],
+      },
+      actor,
+    );
+    await purchase.confirmOrder(order.id, actor);
+    const updated = await purchase.updateOrder(
+      order.id,
+      {
+        supplierId,
+        buyerId,
+        purchaseChannelId: channelId,
+        currency: 'CNY',
+        orderDate: '2026-07-18T00:00:00.000Z',
+        expectedAt: '2026-07-20T00:00:00.000Z',
+        remark: '已更正采购数量和单价',
+        items: [{ skuId, quantity: '6', unitPrice: '12' }],
+      },
+      actor,
+    );
+    expect(updated.status).toBe(PurchaseOrderStatus.CONFIRMED);
+    expect(updated.totalAmount.toString()).toBe('72');
+    expect(updated.items[0].quantity.toString()).toBe('6');
+    expect(updated.items[0].unitPrice.toString()).toBe('12');
   });
 });

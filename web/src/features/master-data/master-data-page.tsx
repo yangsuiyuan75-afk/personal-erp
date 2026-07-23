@@ -8,23 +8,30 @@ import { DateRangePickerInput } from '@/components/ui/date-picker';
 import { Input, Select } from '@/components/ui/field';
 import { ImagePreview } from '@/components/ui/image-preview';
 import { apiErrorMessage } from '@/lib/api-error';
-import { useFileObjectUrl } from '../files/use-files';
+import { enumLabel } from '@/lib/enum-label';
 import { exportMasterData, type MasterRow } from './api';
 import { masterConfigs, type MasterConfig } from './config';
 import { DeactivateDialog } from './deactivate-dialog';
 import { MasterDataFormDialog } from './master-data-form-dialog';
 import { useListUrlState } from './use-list-url-state';
-import { useMasterList, useMasterMutations } from './use-master-data';
+import { useMasterList, useMasterMutations, useProductImageUrl } from './use-master-data';
 
-type ProductImageAsset = { fileAsset?: { id?: string; fileName?: string } };
+const inventoryModeLabels: Record<string, string> = {
+  DIRECT_FROM_LOCATION: '指定仓库直发',
+  EXTERNAL_WAREHOUSE: '外部平台仓',
+  VIRTUAL_ALLOCATION: '虚拟渠道额度',
+};
 
-function primaryImage(row: MasterRow): ProductImageAsset | undefined {
-  return (row.images as ProductImageAsset[] | undefined)?.[0];
+function inventoryModeLabel(value: unknown) {
+  if (value == null || value === '') return '—';
+  return inventoryModeLabels[String(value)] ?? enumLabel(value);
 }
 
+type ProductImageAsset = { fileAssetId: string; fileAsset?: { id: string; fileName: string } };
+
 function ProductThumbnail({ row, large = false }: { row: MasterRow; large?: boolean }) {
-  const image = primaryImage(row);
-  const content = useFileObjectUrl(image?.fileAsset?.id);
+  const image = (row.images as ProductImageAsset[] | undefined)?.[0];
+  const content = useProductImageUrl(row.id, image?.fileAssetId);
   if (image?.fileAsset?.id && content.url) {
     return (
       <ImagePreview
@@ -44,12 +51,18 @@ function ProductThumbnail({ row, large = false }: { row: MasterRow; large?: bool
   );
 }
 
-function detailFieldValue(field: MasterConfig['fields'][number], row: MasterRow) {
+function detailFieldValue(
+  config: MasterConfig,
+  field: MasterConfig['fields'][number],
+  row: MasterRow,
+) {
   const relation = field.name.endsWith('Id') ? row[field.name.slice(0, -2)] : undefined;
   const value =
     relation && typeof relation === 'object' && 'name' in relation
       ? (relation as { name: string }).name
       : row[field.name];
+  if (config.resource === 'sales-channels' && field.name === 'inventoryMode')
+    return inventoryModeLabel(value);
   if (field.type === 'attributes' && value && typeof value === 'object') {
     return Object.entries(value as Record<string, unknown>)
       .map(([key, item]) => `${key}：${item}`)
@@ -66,7 +79,7 @@ function MasterDataDetails({ config, row }: { config: MasterConfig; row: MasterR
         {config.fields.map((field) => (
           <div key={field.name}>
             <dt>{field.label}</dt>
-            <dd>{detailFieldValue(field, row)}</dd>
+            <dd>{detailFieldValue(config, field, row)}</dd>
           </div>
         ))}
         <div>
@@ -99,7 +112,7 @@ export function MasterDataPage() {
             key: 'image',
             label: '图片',
             sortable: false,
-            render: (row: MasterRow) => <ProductThumbnail row={row} />,
+            render: (row) => <ProductThumbnail row={row} />,
           },
           ...config.columns,
         ]
@@ -219,7 +232,11 @@ export function MasterDataPage() {
           )}
           columns={columns.map((column) => ({
             ...column,
-            sortable: column.sortable ?? (!column.key.includes('.') && column.key !== 'channels'),
+            render:
+              config.resource === 'sales-channels' && column.key === 'inventoryMode'
+                ? (row) => inventoryModeLabel(row.inventoryMode)
+                : column.render,
+            sortable: column.sortable ?? !column.key.includes('.'),
           }))}
           error={list.error ? apiErrorMessage(list.error) : undefined}
           loading={list.isLoading}
@@ -235,7 +252,7 @@ export function MasterDataPage() {
             );
           }}
           rows={list.data?.data ?? []}
-          renderExpandedRow={(row) => <MasterDataDetails config={config} row={row} />}
+          renderDetail={(row) => <MasterDataDetails config={config} row={row} />}
           sortBy={params.sortBy}
           sortOrder={params.sortOrder}
         />

@@ -110,6 +110,7 @@ TanStack Table 使用
 - accountId；
 - direction；
 - category；
+- expenseCategory；
 - salesChannelId；
 - supplierId；
 - customerId；
@@ -119,6 +120,8 @@ TanStack Table 使用
 ## 6. 排序
 
 每个接口定义 sortBy 白名单，禁止把任意字段直接拼入 SQL。
+
+采购业务列表未指定 `sortBy` 时按业务时间倒序展示最新记录：报价按生效时间、订单按下单时间、收货/退货/应付按发生时间、供应商退款按创建时间；显式 URL 排序优先。
 
 ## 7. 防抖
 
@@ -160,21 +163,17 @@ Select、日期和状态变更立即查询。
 
 ## 11. Phase 6 财务查询契约
 
-- 财务列表支持 `month` 或 `createdFrom / createdTo`，以及账户、销售渠道、客户、供应商、采购渠道、采购员、资金方向和业务分类筛选；
-- 账户、应付、应收、付款、收款、资金流水和调整单都使用独立服务端排序白名单；
+- 财务列表支持 `month` 或 `createdFrom / createdTo`，以及账户、销售渠道、客户、供应商、采购渠道、采购员、资金方向和业务分类筛选；日常开销账单额外支持 `expenseCategory` 与 `documentStatus`；
+- 账户、应付、应收、付款、收款、资金流水、调整单和日常开销账单都使用独立服务端排序白名单；
 - 月份、所有业务维度、分页、关键字和排序同步到 URL；
 - 月度分析直接在服务端从资金、销售成本、质量损失和义务余额聚合，不对分页结果求和；
 - 维度排行以真实入账/支出为口径，Supplier Credit 不进入现金维度排行。
 
-## 12. Phase 7 文件查询契约
+## 12. Phase 7 OneDrive 设置契约
 
-- `GET /files` 使用统一的 10/20/50/100 服务端分页；
-- `keyword` 搜索 fileName、logicalPath 和 SHA-256；
-- 支持 `provider`、`fileStatus`、`productId`、`module`、`entityType`、`entityId` 与创建时间筛选；
-- `sortBy` 只允许 createdAt、updatedAt、fileName、size、status、provider 和 logicalPath；
-- 文件中心视图、筛选、页码、页容量和排序同步 URL；
-- `GET /files/export` 按当前筛选条件流式输出 CSV，并防止公式注入；
-- 单个商品图库按明确 productId 查询，排序更新必须提交该商品全部、不重复的 imageIds。
+- OneDrive 设置页不提供文件、商品图片或附件的列表、筛选、分页和导出；
+- 设置页仅查询连接状态，并在设备代码授权期间轮询状态；
+- 备份文件由备份模块按其既有查询契约管理，浏览器不直接查询 `FileAsset`。
 
 ## 13. Phase 8 备份查询契约
 

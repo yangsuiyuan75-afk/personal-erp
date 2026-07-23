@@ -151,22 +151,31 @@ describe('Phase 4 sales API (e2e)', () => {
     orderId = order.body.data.id;
     orderItemId = order.body.data.items[0].id;
     expect(order.body.data.items[0].unitPrice).toBe('20');
+    expect(order.body.data.issues).toMatchObject([
+      {
+        status: 'DRAFT',
+        occurredAt: '2026-07-16T01:00:00.000Z',
+        items: [{ salesOrderItemId: orderItemId, quantity: '3' }],
+      },
+    ]);
+    issueId = order.body.data.issues[0].id;
+    issueItemId = order.body.data.issues[0].items[0].id;
     await request(app.getHttpServer())
       .post(`/api/v1/sales/orders/${orderId}/confirm`)
       .set(auth)
       .expect(201);
     const issue = await request(app.getHttpServer())
-      .post('/api/v1/sales/issues')
+      .patch(`/api/v1/sales/issues/${issueId}`)
       .set(auth)
       .send({
-        salesOrderId: orderId,
         locationId,
-        occurredAt: '2026-07-16T02:00:00.000Z',
-        items: [{ salesOrderItemId: orderItemId, quantity: '3' }],
+        quantity: '2',
       })
-      .expect(201);
-    issueId = issue.body.data.id;
-    issueItemId = issue.body.data.items[0].id;
+      .expect(200);
+    expect(issue.body.data).toMatchObject({
+      occurredAt: '2026-07-16T01:00:00.000Z',
+      items: [{ id: issueItemId, quantity: '2' }],
+    });
     await request(app.getHttpServer())
       .post(`/api/v1/sales/issues/${issueId}/post`)
       .set(auth)
@@ -177,9 +186,17 @@ describe('Phase 4 sales API (e2e)', () => {
       .set(auth)
       .expect(200);
     expect(receivables.body.data[0]).toMatchObject({
-      originalAmount: '60',
-      outstandingAmount: '60',
+      originalAmount: '40',
+      outstandingAmount: '40',
+      salesIssue: { items: [{ quantity: '2', sku: { code: 'SAL-SKU', name: '销售 E2E SKU' } }] },
     });
+    const drafts = await request(app.getHttpServer())
+      .get(
+        '/api/v1/sales/issues?page=1&pageSize=20&sortBy=occurredAt&sortOrder=desc&documentStatus=DRAFT',
+      )
+      .set(auth)
+      .expect(200);
+    expect(drafts.body.data).toMatchObject([{ status: 'DRAFT', items: [{ quantity: '1' }] }]);
   });
 
   it('posts sales return only into QC_PENDING and adjusts receivable', async () => {
@@ -213,11 +230,11 @@ describe('Phase 4 sales API (e2e)', () => {
         row.locationId === locationId && row.stockStatus === 'AVAILABLE',
     );
     expect(qc.onHandQuantity).toBe('1');
-    expect(available.onHandQuantity).toBe('7');
+    expect(available.onHandQuantity).toBe('8');
     const receivables = await request(app.getHttpServer())
       .get('/api/v1/sales/receivables?page=1&pageSize=20&sortBy=occurredAt&sortOrder=desc')
       .set(auth)
       .expect(200);
-    expect(receivables.body.data[0].outstandingAmount).toBe('40');
+    expect(receivables.body.data[0].outstandingAmount).toBe('20');
   });
 });

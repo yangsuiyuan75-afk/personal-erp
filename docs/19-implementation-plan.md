@@ -69,11 +69,8 @@
 
 - MSAL；
 - 设置向导；
-- FileAsset；
-- ProductImage；
-- 附件；
-- 流式读取；
-- 重试。
+- 供备份模块和产品图片使用的 FileAsset 与 StorageProvider；
+- 不提供文件资产中心、通用附件、通用流式读取或重试接口。
 
 ## Phase 8 --- 备份与验收
 

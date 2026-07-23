@@ -33,6 +33,7 @@ export function DatePickerInput({
       placeholder={mode === 'month' ? '请选择月份' : '请选择日期'}
       value={pickerDate(value, format.length)}
       {...props}
+      autoComplete="off"
     />
   );
 }
@@ -62,6 +63,7 @@ export function DateRangePickerInput({
       placeholder={['开始日期', '结束日期']}
       value={selected}
       {...props}
+      autoComplete="off"
     />
   );
 }

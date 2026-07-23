@@ -145,6 +145,8 @@ export class CreatePurchaseOrderDto {
   items!: PurchaseOrderItemDto[];
 }
 
+export class UpdatePurchaseOrderDto extends CreatePurchaseOrderDto {}
+
 export class PurchaseReceiptItemDto {
   @IsUUID()
   purchaseOrderItemId!: string;

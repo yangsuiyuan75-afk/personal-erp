@@ -22,6 +22,7 @@ import { AuditService } from '../audit/audit.service';
 import type { AuthUser } from '../auth/auth.types';
 import type {
   CreateAccountAdjustmentDto,
+  CreateExpenseBillDto,
   CreateFinancialAccountDto,
   CreatePaymentDto,
   CreateReceiptDto,
@@ -119,7 +120,7 @@ export class FinanceService {
   }
 
   async createAccount(payload: CreateFinancialAccountDto, actor: AuthUser, requestId?: string) {
-    const code = payload.code.trim().toUpperCase();
+    const code = payload.code.trim();
     if (await this.prisma.financialAccount.findUnique({ where: { code } }))
       throw new ConflictException({ code: 'CODE_EXISTS', message: '资金账户代码已存在' });
     const data = await this.prisma.financialAccount.create({
@@ -282,6 +283,7 @@ export class FinanceService {
   async listAdjustments(query: FinanceQueryDto) {
     this.assertSort(query.sortBy, DOCUMENT_SORT);
     const where: Prisma.AccountAdjustmentWhereInput = {
+      expenseCategory: null,
       ...(query.accountId ? { accountId: query.accountId } : {}),
       ...(query.direction ? { direction: query.direction } : {}),
       ...(query.category ? { category: query.category } : {}),
@@ -310,6 +312,55 @@ export class FinanceService {
       buyer: true,
       transaction: true,
     });
+  }
+
+  async listExpenseBills(query: FinanceQueryDto) {
+    this.assertSort(query.sortBy, DOCUMENT_SORT);
+    const where: Prisma.AccountAdjustmentWhereInput = {
+      direction: FinancialDirection.OUT,
+      category: FinancialTransactionCategory.OTHER_EXPENSE,
+      expenseCategory: query.expenseCategory ?? { not: null },
+      ...(query.accountId ? { accountId: query.accountId } : {}),
+      ...(query.documentStatus ? { status: query.documentStatus as DocumentStatus } : {}),
+      ...this.dateWhere(query, 'occurredAt'),
+      ...(query.keyword
+        ? {
+            OR: [
+              { adjustmentNo: { contains: query.keyword, mode: 'insensitive' } },
+              { reason: { contains: query.keyword, mode: 'insensitive' } },
+              { payee: { contains: query.keyword, mode: 'insensitive' } },
+              { account: { name: { contains: query.keyword, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    };
+    const [data, total, posted, pending] = await Promise.all([
+      this.prisma.accountAdjustment.findMany({
+        where,
+        include: { account: true, transaction: true },
+        orderBy: { [query.sortBy]: query.sortOrder },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.accountAdjustment.count({ where }),
+      this.prisma.accountAdjustment.aggregate({
+        where: { ...where, status: DocumentStatus.POSTED },
+        _sum: { amount: true },
+      }),
+      this.prisma.accountAdjustment.aggregate({
+        where: { ...where, status: DocumentStatus.DRAFT },
+        _sum: { amount: true },
+      }),
+    ]);
+    return {
+      data,
+      meta: paginationMeta(query.page, query.pageSize, total),
+      summary: {
+        postedAmount: posted._sum.amount ?? new Prisma.Decimal(0),
+        pendingAmount: pending._sum.amount ?? new Prisma.Decimal(0),
+        billCount: total,
+      },
+    };
   }
 
   async listTransactions(query: FinanceQueryDto) {
@@ -982,8 +1033,45 @@ export class FinanceService {
     return data;
   }
 
+  async createExpenseBill(payload: CreateExpenseBillDto, actor: AuthUser, requestId?: string) {
+    const account = await this.activeAccount(payload.accountId);
+    const data = await this.prisma.accountAdjustment.create({
+      data: {
+        adjustmentNo: businessNo('EXP'),
+        accountId: account.id,
+        direction: FinancialDirection.OUT,
+        category: FinancialTransactionCategory.OTHER_EXPENSE,
+        expenseCategory: payload.expenseCategory,
+        payee: payload.payee.trim(),
+        amount: decimal(payload.amount, '开销金额'),
+        currency: account.currency,
+        occurredAt: new Date(payload.occurredAt),
+        reason: payload.reason.trim(),
+      },
+      include: { account: true },
+    });
+    await this.audit.record({
+      userId: actor.id,
+      module: 'FINANCE',
+      action: 'CREATE_EXPENSE_BILL',
+      entityType: 'ExpenseBill',
+      entityId: data.id,
+      after: data,
+      requestId,
+    });
+    return data;
+  }
+
+  async postExpenseBill(id: string, idempotencyKey: string, actor: AuthUser, requestId?: string) {
+    const bill = await this.prisma.accountAdjustment.findFirst({
+      where: { id, expenseCategory: { not: null } },
+    });
+    if (!bill) throw new NotFoundException({ code: 'NOT_FOUND', message: '日常开销账单不存在' });
+    return this.postAdjustment(id, idempotencyKey, actor, requestId);
+  }
+
   async postAdjustment(id: string, idempotencyKey: string, actor: AuthUser, requestId?: string) {
-    this.requireKey(idempotencyKey, '账户调整过账');
+    this.requireKey(idempotencyKey, '财务单据过账');
     const scope = `FINANCE_ADJUSTMENT_POST:${id}`;
     const replay = await this.replay(scope, idempotencyKey, id);
     if (replay) return this.adjustmentDetail(replay);
@@ -1010,7 +1098,7 @@ export class FinanceService {
           category: adjustment.category,
           amount: adjustment.amount,
           currency: adjustment.currency,
-          sourceType: 'ACCOUNT_ADJUSTMENT',
+          sourceType: adjustment.expenseCategory ? 'EXPENSE_BILL' : 'ACCOUNT_ADJUSTMENT',
           sourceId: adjustment.id,
           salesChannelId: adjustment.salesChannelId,
           customerId: adjustment.customerId,
@@ -1018,7 +1106,9 @@ export class FinanceService {
           purchaseChannelId: adjustment.purchaseChannelId,
           buyerId: adjustment.buyerId,
           occurredAt: adjustment.occurredAt,
-          remark: adjustment.reason,
+          remark: adjustment.payee
+            ? `${adjustment.reason} · ${adjustment.payee}`
+            : adjustment.reason,
         },
       });
       await transaction.accountAdjustment.update({
@@ -1045,8 +1135,8 @@ export class FinanceService {
     await this.audit.record({
       userId: actor.id,
       module: 'FINANCE',
-      action: 'POST_ADJUSTMENT',
-      entityType: 'AccountAdjustment',
+      action: data.expenseCategory ? 'POST_EXPENSE_BILL' : 'POST_ADJUSTMENT',
+      entityType: data.expenseCategory ? 'ExpenseBill' : 'AccountAdjustment',
       entityId: adjustmentId,
       after: data,
       requestId,

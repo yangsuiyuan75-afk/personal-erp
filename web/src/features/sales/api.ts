@@ -48,8 +48,13 @@ export const createSalesPrice = (payload: Record<string, unknown>) =>
   create('/sales/prices', payload);
 export const createSalesOrder = (payload: Record<string, unknown>) =>
   create('/sales/orders', payload);
-export const createSalesIssue = (payload: Record<string, unknown>) =>
-  create('/sales/issues', payload);
+export async function updateSalesIssue(
+  id: string,
+  payload: Record<string, unknown>,
+): Promise<MasterRow> {
+  const response = await apiClient.patch<{ data: MasterRow }>(`/sales/issues/${id}`, payload);
+  return response.data.data;
+}
 export const createSalesReturn = (payload: Record<string, unknown>) =>
   create('/sales/returns', payload);
 

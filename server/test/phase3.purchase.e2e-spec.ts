@@ -58,7 +58,6 @@ describe('Phase 3 purchase API (e2e)', () => {
       .send({
         code: 'BUY-E2E',
         name: '采购 E2E 采购员',
-        purchaseChannelIds: [channel.body.data.id],
       })
       .expect(201);
     const category = await request(app.getHttpServer())
@@ -138,7 +137,11 @@ describe('Phase 3 purchase API (e2e)', () => {
       .get('/api/v1/purchase/payables?page=1&pageSize=20&sortBy=occurredAt&sortOrder=desc')
       .set(auth)
       .expect(200);
-    expect(payables.body.data[0]).toMatchObject({ originalAmount: '85', outstandingAmount: '85' });
+    expect(payables.body.data[0]).toMatchObject({
+      originalAmount: '85',
+      outstandingAmount: '85',
+      purchaseReceipt: { items: [{ sku: { code: 'PUR-SKU', name: '采购 E2E SKU' } }] },
+    });
   });
 
   it('posts purchase return against its original batch and adjusts payable', async () => {

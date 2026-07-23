@@ -1,6 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ImagePlus, Plus, Star, Trash2, X } from 'lucide-react';
+import { ImagePlus, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   useForm,
@@ -14,11 +14,14 @@ import { useToast } from '@/components/feedback/toast-provider';
 import { Field, Input, Select, Textarea } from '@/components/ui/field';
 import { ImagePreview } from '@/components/ui/image-preview';
 import { apiErrorMessage } from '@/lib/api-error';
-import type { MasterRow } from './api';
+import type { MasterRow, ProductImage } from './api';
 import type { FormField, MasterConfig } from './config';
-import { useMasterOptions } from './use-master-data';
-import type { ProductImage } from '../files/api';
-import { useFileMutations, useFileObjectUrl, useProductImages } from '../files/use-files';
+import {
+  useMasterOptions,
+  useProductImageMutations,
+  useProductImages,
+  useProductImageUrl,
+} from './use-master-data';
 
 function rowDefaults(config: MasterConfig, row?: MasterRow): Record<string, unknown> {
   return Object.fromEntries(
@@ -29,10 +32,6 @@ function rowDefaults(config: MasterConfig, row?: MasterRow): Record<string, unkn
         if (field.name === 'decimalScale') return [field.name, 0];
         return [field.name, ''];
       }
-      if (field.name === 'purchaseChannelIds') {
-        const channels = (row.channels as Array<{ purchaseChannelId: string }> | undefined) ?? [];
-        return [field.name, channels.map((item) => item.purchaseChannelId)];
-      }
       if (field.type === 'json' || field.type === 'attributes')
         return [field.name, JSON.stringify(row[field.name] ?? {}, null, 2)];
       return [field.name, row[field.name] ?? ''];
@@ -41,6 +40,70 @@ function rowDefaults(config: MasterConfig, row?: MasterRow): Record<string, unkn
 }
 
 type AttributePair = { key: string; value: string };
+
+const inventoryModeGuides = [
+  {
+    value: 'DIRECT_FROM_LOCATION',
+    title: '指定仓库直发',
+    summary: '货在本地实际仓，由本地仓直接发给客户或平台订单。',
+    when: '适合线下销售、自发货，或商品尚未送入平台仓。',
+    rule: '出库扣减渠道默认地点或订单指定的真实仓库库存。',
+  },
+  {
+    value: 'EXTERNAL_WAREHOUSE',
+    title: '外部平台仓',
+    summary: '货已实际进入平台、海外仓或第三方仓，平台仓有独立真实库存。',
+    when: '适合已把商品调拨到销售平台仓的渠道。',
+    rule: '先调拨入关联的平台仓，销售只能从该平台仓扣减库存。',
+  },
+  {
+    value: 'VIRTUAL_ALLOCATION',
+    title: '虚拟渠道额度',
+    summary: '货仍在本地实际仓，只为渠道设定可销售上限，不建立渠道实体库存。',
+    when: '适合多渠道共用本地库存，但需要限制某渠道可售数量。',
+    rule: '销售仍扣减实际仓库存，同时消耗该渠道的已分配额度。',
+  },
+] as const;
+
+function InventoryModeGuide({
+  value,
+  onSelect,
+}: {
+  value: string;
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <section aria-label="库存模式选择说明" className="inventory-mode-guide">
+      <header>
+        <strong>如何选择库存模式</strong>
+        <span>先判断货物实际存放位置，再选择是否需要渠道额度限制。</span>
+      </header>
+      <div>
+        {inventoryModeGuides.map((guide) => (
+          <button
+            aria-pressed={value === guide.value}
+            key={guide.value}
+            onClick={() => onSelect(guide.value)}
+            type="button"
+          >
+            <h3>{guide.title}</h3>
+            <p>{guide.summary}</p>
+            <dl>
+              <div>
+                <dt>选择场景</dt>
+                <dd>{guide.when}</dd>
+              </div>
+              <div>
+                <dt>库存规则</dt>
+                <dd>{guide.rule}</dd>
+              </div>
+            </dl>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function attributePairs(value: unknown): AttributePair[] {
   try {
@@ -132,22 +195,23 @@ function AttributeEditor({
 
 function ProductImageCard({
   image,
-  pending,
-  onMakePrimary,
   onRemove,
+  pending,
+  productId,
 }: {
   image: ProductImage;
-  pending: boolean;
-  onMakePrimary: () => void;
   onRemove: () => void;
+  pending: boolean;
+  productId: string;
 }) {
-  const content = useFileObjectUrl(image.fileAssetId);
-
+  const content = useProductImageUrl(productId, image.fileAssetId);
   return (
     <article className={`product-image-card ${image.isPrimary ? 'primary' : ''}`}>
       <div className="product-image-preview">
         {content.url ? (
           <ImagePreview alt={image.fileAsset.fileName} src={content.url} />
+        ) : content.isLoading ? (
+          <span aria-label="图片加载中" className="image-loading-spinner" />
         ) : (
           <ImagePlus size={22} />
         )}
@@ -157,9 +221,6 @@ function ProductImageCard({
         <span>{image.isPrimary ? '主图' : '附图'}</span>
       </div>
       <footer>
-        <button disabled={image.isPrimary || pending} onClick={onMakePrimary} type="button">
-          <Star size={13} /> 设为主图
-        </button>
         <button className="danger" disabled={pending} onClick={onRemove} type="button">
           <Trash2 size={13} /> 删除
         </button>
@@ -230,7 +291,10 @@ function DynamicField({
           {...registration}
         />
       ) : field.type === 'select' ? (
-        <Select {...registration}>
+        <Select
+          {...registration}
+          value={field.name === 'inventoryMode' ? String(watch(field.name) ?? '') : undefined}
+        >
           <option value="">请选择</option>
           {choices.map((option) => (
             <option key={option.value} value={option.value}>
@@ -281,7 +345,7 @@ export function MasterDataFormDialog({
   const [savedProduct, setSavedProduct] = useState<MasterRow>();
   const productId = isProduct ? (row?.id ?? savedProduct?.id) : undefined;
   const images = useProductImages(productId);
-  const fileMutations = useFileMutations();
+  const imageMutations = useProductImageMutations();
   const {
     register,
     setValue,
@@ -312,11 +376,8 @@ export function MasterDataFormDialog({
       const saved = savedProduct ?? (await onSave(payload));
       if (isProduct && imageFiles.length) {
         setSavedProduct(saved);
-        await fileMutations.uploadImages.mutateAsync({
-          productId: saved.id,
-          files: imageFiles,
-          isPrimary: true,
-        });
+        await imageMutations.upload.mutateAsync({ productId: saved.id, files: imageFiles });
+        setImageFiles([]);
       }
       notify(row ? '资料已更新' : '资料已创建', 'success');
       onOpenChange(false);
@@ -325,10 +386,7 @@ export function MasterDataFormDialog({
     }
   };
 
-  const imagePending =
-    fileMutations.uploadImages.isPending ||
-    fileMutations.primary.isPending ||
-    fileMutations.removeImage.isPending;
+  const imagePending = imageMutations.upload.isPending || imageMutations.remove.isPending;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -357,6 +415,18 @@ export function MasterDataFormDialog({
                     watch={watch}
                   />
                 ))}
+                {config.resource === 'sales-channels' ? (
+                  <InventoryModeGuide
+                    onSelect={(inventoryMode) =>
+                      setValue('inventoryMode', inventoryMode, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      })
+                    }
+                    value={String(watch('inventoryMode') ?? '')}
+                  />
+                ) : null}
                 {isProduct ? (
                   <Field label="产品图片">
                     <div className="product-image-editor">
@@ -374,14 +444,16 @@ export function MasterDataFormDialog({
                             setImageFiles(
                               Array.from(event.target.files ?? []).slice(
                                 0,
-                                Math.min(8, 12 - (images.data?.images.length ?? 0)),
+                                12 - (images.data?.length ?? 0),
                               ),
                             )
                           }
                           type="file"
                         />
                       </label>
-                      <small className="muted">保存后上传，第一张图片会设为主图。</small>
+                      <small className="muted">
+                        单张不超过 10 MB；保存后上传，第一张图片为主图。
+                      </small>
                       {imageFiles.length ? (
                         <div className="product-image-grid product-image-editor-grid">
                           {imageFiles.map((file) => (
@@ -395,25 +467,19 @@ export function MasterDataFormDialog({
                           ))}
                         </div>
                       ) : null}
-                      {images.data?.images.length ? (
+                      {productId && images.data?.length ? (
                         <div className="product-image-grid product-image-editor-grid">
-                          {images.data.images.map((image) => (
+                          {images.data.map((image) => (
                             <ProductImageCard
                               image={image}
                               key={image.id}
-                              onMakePrimary={() =>
-                                productId &&
-                                void fileMutations.primary
-                                  .mutateAsync({ productId, imageId: image.id })
-                                  .catch((error) => notify(apiErrorMessage(error), 'error'))
-                              }
                               onRemove={() =>
-                                productId &&
-                                void fileMutations.removeImage
+                                void imageMutations.remove
                                   .mutateAsync({ productId, imageId: image.id })
                                   .catch((error) => notify(apiErrorMessage(error), 'error'))
                               }
                               pending={imagePending}
+                              productId={productId}
                             />
                           ))}
                         </div>

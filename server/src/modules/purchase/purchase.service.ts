@@ -26,6 +26,7 @@ import type {
   CreatePurchaseReceiptDto,
   CreatePurchaseReturnDto,
   PurchaseQueryDto,
+  UpdatePurchaseOrderDto,
   UpdatePurchasePriceDto,
 } from './dto/purchase.dto';
 
@@ -203,36 +204,7 @@ export class PurchaseService {
 
   async createOrder(payload: CreatePurchaseOrderDto, actor: AuthUser, requestId?: string) {
     await this.assertPurchaseReferences(payload);
-    const buyerChannel = await this.prisma.buyerPurchaseChannel.findUnique({
-      where: {
-        buyerId_purchaseChannelId: {
-          buyerId: payload.buyerId,
-          purchaseChannelId: payload.purchaseChannelId,
-        },
-      },
-    });
-    if (!buyerChannel)
-      throw new UnprocessableEntityException({
-        code: 'BUYER_CHANNEL_INVALID',
-        message: '采购员未关联所选采购渠道',
-      });
-    const skuIds = payload.items.map((item) => item.skuId);
-    if (new Set(skuIds).size !== skuIds.length)
-      throw new UnprocessableEntityException({
-        code: 'DUPLICATE_SKU',
-        message: '同一采购订单内 SKU 不能重复',
-      });
-    const skus = await this.prisma.sku.findMany({ where: { id: { in: skuIds } } });
-    if (skus.length !== skuIds.length || skus.some((sku) => sku.status !== MasterDataStatus.ACTIVE))
-      throw new UnprocessableEntityException({
-        code: 'SKU_INVALID',
-        message: 'SKU 不存在或已停用',
-      });
-    const items = payload.items.map((item) => {
-      const quantity = positive(item.quantity, '采购数量');
-      const unitPrice = nonNegative(item.unitPrice, '采购单价');
-      return { ...item, quantity, unitPrice, lineAmount: quantity.mul(unitPrice) };
-    });
+    const items = await this.prepareOrderItems(payload.items);
     const totalAmount = items.reduce(
       (sum, item) => sum.plus(item.lineAmount),
       new Prisma.Decimal(0),
@@ -271,6 +243,74 @@ export class PurchaseService {
       action: 'CREATE_ORDER',
       entityType: 'PurchaseOrder',
       entityId: data.id,
+      after: data,
+      requestId,
+    });
+    return data;
+  }
+
+  async updateOrder(
+    id: string,
+    payload: UpdatePurchaseOrderDto,
+    actor: AuthUser,
+    requestId?: string,
+  ) {
+    const before = await this.order(id);
+    if (
+      before.status !== PurchaseOrderStatus.DRAFT &&
+      before.status !== PurchaseOrderStatus.CONFIRMED
+    )
+      throw new ConflictException({
+        code: 'ORDER_STATE_INVALID',
+        message: '只有未收货的草稿或已确认采购订单可以修改',
+      });
+    if (await this.prisma.purchaseReceipt.count({ where: { purchaseOrderId: id } }))
+      throw new ConflictException({
+        code: 'ORDER_RECEIPT_EXISTS',
+        message: '已有收货单的采购订单不能修改',
+      });
+    await this.assertPurchaseReferences(payload);
+    const items = await this.prepareOrderItems(payload.items);
+    const totalAmount = items.reduce(
+      (sum, item) => sum.plus(item.lineAmount),
+      new Prisma.Decimal(0),
+    );
+    const data = await this.prisma.purchaseOrder.update({
+      where: { id },
+      data: {
+        supplierId: payload.supplierId,
+        buyerId: payload.buyerId,
+        purchaseChannelId: payload.purchaseChannelId,
+        currency: payload.currency.toUpperCase(),
+        orderDate: new Date(payload.orderDate),
+        expectedAt: payload.expectedAt ? new Date(payload.expectedAt) : null,
+        remark: payload.remark,
+        totalAmount,
+        items: {
+          deleteMany: {},
+          create: items.map((item) => ({
+            skuId: item.skuId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            lineAmount: item.lineAmount,
+            remark: item.remark,
+          })),
+        },
+      },
+      include: {
+        items: { include: { sku: true } },
+        supplier: true,
+        buyer: true,
+        purchaseChannel: true,
+      },
+    });
+    await this.audit.record({
+      userId: actor.id,
+      module: 'PURCHASE',
+      action: 'UPDATE_ORDER',
+      entityType: 'PurchaseOrder',
+      entityId: id,
+      before,
       after: data,
       requestId,
     });
@@ -767,6 +807,9 @@ export class PurchaseService {
           buyer: { select: { id: true, code: true, name: true } },
           purchaseChannel: { select: { id: true, code: true, name: true } },
           adjustments: true,
+          purchaseReceipt: {
+            include: { items: { include: { sku: { select: { code: true, name: true } } } } },
+          },
         },
         orderBy: { [query.sortBy]: query.sortOrder },
         skip: (query.page - 1) * query.pageSize,
@@ -793,7 +836,12 @@ export class PurchaseService {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.supplierCredit.findMany({
         where,
-        include: { supplier: true, purchaseReturn: true },
+        include: {
+          supplier: true,
+          purchaseReturn: {
+            include: { items: { include: { sku: { select: { code: true, name: true } } } } },
+          },
+        },
         orderBy: { [query.sortBy]: query.sortOrder },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -885,6 +933,26 @@ export class PurchaseService {
       throw new UnprocessableEntityException({ code: 'BUYER_INVALID', message: '采购员无效' });
     if (payload.skuId && (!sku || sku.status !== MasterDataStatus.ACTIVE))
       throw new UnprocessableEntityException({ code: 'SKU_INVALID', message: 'SKU 无效' });
+  }
+
+  private async prepareOrderItems(items: CreatePurchaseOrderDto['items']) {
+    const skuIds = items.map((item) => item.skuId);
+    if (new Set(skuIds).size !== skuIds.length)
+      throw new UnprocessableEntityException({
+        code: 'DUPLICATE_SKU',
+        message: '同一采购订单内 SKU 不能重复',
+      });
+    const skus = await this.prisma.sku.findMany({ where: { id: { in: skuIds } } });
+    if (skus.length !== skuIds.length || skus.some((sku) => sku.status !== MasterDataStatus.ACTIVE))
+      throw new UnprocessableEntityException({
+        code: 'SKU_INVALID',
+        message: 'SKU 不存在或已停用',
+      });
+    return items.map((item) => {
+      const quantity = positive(item.quantity, '采购数量');
+      const unitPrice = nonNegative(item.unitPrice, '采购单价');
+      return { ...item, quantity, unitPrice, lineAmount: quantity.mul(unitPrice) };
+    });
   }
 
   private async assertLeafLocation(id: string) {

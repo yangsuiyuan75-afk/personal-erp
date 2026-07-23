@@ -51,6 +51,10 @@ export const createPurchasePrice = (payload: Record<string, unknown>) =>
   create('/purchase/prices', payload);
 export const createPurchaseOrder = (payload: Record<string, unknown>) =>
   create('/purchase/orders', payload);
+export async function updatePurchaseOrder(id: string, payload: Record<string, unknown>) {
+  const response = await apiClient.patch<{ data: MasterRow }>(`/purchase/orders/${id}`, payload);
+  return response.data.data;
+}
 export const createPurchaseReceipt = (payload: Record<string, unknown>) =>
   create('/purchase/receipts', payload);
 export const createPurchaseReturn = (payload: Record<string, unknown>) =>

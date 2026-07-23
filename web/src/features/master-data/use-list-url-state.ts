@@ -40,6 +40,7 @@ export function useListUrlState() {
       accountId: search.get('accountId') || undefined,
       direction: search.get('direction') || undefined,
       category: search.get('category') || undefined,
+      expenseCategory: search.get('expenseCategory') || undefined,
       month: search.get('month') || undefined,
       provider: search.get('provider') || undefined,
       fileStatus: search.get('fileStatus') || undefined,

@@ -5,7 +5,6 @@ import {
   CircleDollarSign,
   ClipboardCheck,
   DatabaseBackup,
-  FolderOpen,
   Home,
   LogOut,
   Monitor,
@@ -57,13 +56,13 @@ const groups = [
       [Store, '销售管理', '/sales'],
       [ClipboardCheck, '质量管理', '/quality'],
       [CircleDollarSign, '财务管理', '/finance'],
-      [FolderOpen, '文件中心', '/files'],
     ],
   },
   {
     label: '系统',
     items: [
       [DatabaseBackup, '备份恢复', '/backups'],
+      [Settings, 'OneDrive 设置', '/files'],
       [Settings, '审计日志', '/audit'],
     ],
   },
@@ -77,7 +76,7 @@ const pageTitles: Record<string, string> = {
   '/sales': '销售管理',
   '/quality': '质量管理',
   '/finance': '财务管理',
-  '/files': '文件中心',
+  '/files': 'OneDrive 设置',
   '/backups': '备份恢复',
 };
 

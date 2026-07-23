@@ -39,7 +39,7 @@
 - [x] Device Code 登录状态机与模拟 Graph 契约
 - [ ] 真实个人账号 Device Code 授权与 `/me/drive` 连接验证（`WAITING_FOR_EXTERNAL_CONFIGURATION`）
 - [ ] 真实 OneDrive `ERP_STORAGE` 自动创建（`WAITING_FOR_EXTERNAL_CONFIGURATION`）
-- [x] 商品图片上传、展示、排序、删除
+- [x] 商品图片上传、展示、删除与放大预览
 - [x] Token 不进入数据库和日志
 - [x] 大文件 Upload Session
 - [x] 断线与重新授权提示

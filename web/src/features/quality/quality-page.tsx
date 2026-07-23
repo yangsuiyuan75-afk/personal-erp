@@ -18,6 +18,8 @@ import { Input, Select } from '@/components/ui/field';
 import type { ListParams, MasterRow } from '@/features/master-data/api';
 import { useListUrlState } from '@/features/master-data/use-list-url-state';
 import { apiErrorMessage } from '@/lib/api-error';
+import { formatDate } from '@/lib/date';
+import { enumLabel } from '@/lib/enum-label';
 import type { QualityAnalytics, QualityView } from './api';
 import { QualityDialogs, type QualityDialogKind } from './quality-dialogs';
 import { useQualityAnalytics, useQualityList } from './use-quality';
@@ -118,7 +120,7 @@ function status(row: MasterRow) {
   const value = String(row.status);
   return (
     <span className={`business-status business-${value.toLowerCase()}`}>
-      {statusText[value] ?? value}
+      {statusText[value] ?? enumLabel(value)}
     </span>
   );
 }
@@ -164,7 +166,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
         key: 'responsibility',
         label: '责任判定',
         render: (row) =>
-          responsibilityText[String(row.responsibility)] ?? String(row.responsibility),
+          responsibilityText[String(row.responsibility)] ?? enumLabel(row.responsibility),
         sortable: false,
       },
       { key: 'quantity', label: '问题数量', render: (row) => quantity(row.quantity) },
@@ -203,7 +205,8 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
       {
         key: 'resolutionType',
         label: '处理方式',
-        render: (row) => resolutionText[String(row.resolutionType)] ?? String(row.resolutionType),
+        render: (row) =>
+          resolutionText[String(row.resolutionType)] ?? enumLabel(row.resolutionType),
         sortable: false,
       },
       { key: 'quantity', label: '数量', render: (row) => quantity(row.quantity) },
@@ -221,7 +224,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
         label: '质量状态',
         render: (row) => (
           <span className={`stock-pill stock-${String(row.stockStatus).toLowerCase()}`}>
-            {stockText[String(row.stockStatus)] ?? String(row.stockStatus)}
+            {stockText[String(row.stockStatus)] ?? enumLabel(row.stockStatus)}
           </span>
         ),
         sortable: false,
@@ -466,7 +469,7 @@ function QualityContext({
     ['业务编号', row.code],
     [
       '当前状态',
-      statusText[String(row.status)] ?? stockText[String(row.stockStatus)] ?? row.status,
+      statusText[String(row.status)] ?? stockText[String(row.stockStatus)] ?? enumLabel(row.status),
     ],
     ['数量', row.quantity ?? row.onHandQuantity],
     [
@@ -498,7 +501,7 @@ function QualityContext({
                   : label === '数量'
                     ? quantity(value)
                     : label === '发生时间'
-                      ? new Date(String(value)).toLocaleString('zh-CN')
+                      ? formatDate(value)
                       : String(value)}
               </dd>
             </div>

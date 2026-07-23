@@ -20,6 +20,7 @@ import {
   CreatePurchaseReceiptDto,
   CreatePurchaseReturnDto,
   PurchaseQueryDto,
+  UpdatePurchaseOrderDto,
   UpdatePurchasePriceDto,
 } from './dto/purchase.dto';
 import { PurchaseService } from './purchase.service';
@@ -66,6 +67,16 @@ export class PurchaseController {
     @Req() request: RequestWithId,
   ) {
     return this.purchase.createOrder(payload, actor, request.requestId);
+  }
+
+  @Patch('orders/:id')
+  updateOrder(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() payload: UpdatePurchaseOrderDto,
+    @CurrentUser() actor: AuthUser,
+    @Req() request: RequestWithId,
+  ) {
+    return this.purchase.updateOrder(id, payload, actor, request.requestId);
   }
 
   @Post('orders/:id/confirm')

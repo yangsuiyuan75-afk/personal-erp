@@ -2,6 +2,7 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   BarChart3,
+  BookOpenText,
   CircleDollarSign,
   CreditCard,
   Landmark,
@@ -15,12 +16,16 @@ import {
 import { useMemo, useState } from 'react';
 import { DataTable, type DataTableColumn } from '@/components/data-table/data-table';
 import { Button } from '@/components/ui/button';
+import { DatePickerInput } from '@/components/ui/date-picker';
 import { Input, Select } from '@/components/ui/field';
 import type { ListParams, MasterRow } from '@/features/master-data/api';
 import { useListUrlState } from '@/features/master-data/use-list-url-state';
 import { useMasterOptions } from '@/features/master-data/use-master-data';
 import { apiErrorMessage } from '@/lib/api-error';
+import { formatDate } from '@/lib/date';
+import { enumLabel } from '@/lib/enum-label';
 import type { FinanceAnalytics, FinanceListView, FinanceView } from './api';
+import { ExpenseContent } from './expense-page';
 import { FinanceDialogs, type FinanceDialogKind } from './finance-dialogs';
 import {
   useFinanceAnalytics,
@@ -31,6 +36,7 @@ import {
 
 const views: Array<{ id: FinanceView; label: string; icon: typeof Landmark }> = [
   { id: 'accounts', label: '资金账户', icon: Landmark },
+  { id: 'expenses', label: '日常开销', icon: BookOpenText },
   { id: 'payables', label: '应付', icon: ArrowUpCircle },
   { id: 'receivables', label: '应收', icon: ArrowDownCircle },
   { id: 'payments', label: '付款', icon: CreditCard },
@@ -104,7 +110,7 @@ function status(row: MasterRow) {
   const value = String(row.status);
   return (
     <span className={`business-status business-${value.toLowerCase()}`}>
-      {statusText[value] ?? value}
+      {statusText[value] ?? enumLabel(value)}
     </span>
   );
 }
@@ -117,7 +123,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
       {
         key: 'type',
         label: '账户类型',
-        render: (row) => accountTypeText[String(row.type)] ?? String(row.type),
+        render: (row) => accountTypeText[String(row.type)] ?? enumLabel(row.type),
       },
       { key: 'currency', label: '币种', sortable: false },
       {
@@ -215,7 +221,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
       {
         key: 'category',
         label: '业务分类',
-        render: (row) => categoryText[String(row.category)] ?? String(row.category),
+        render: (row) => categoryText[String(row.category)] ?? enumLabel(row.category),
         sortable: false,
       },
       { key: 'amount', label: '金额', render: (row) => <strong>{money(row.amount)}</strong> },
@@ -235,7 +241,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
     {
       key: 'category',
       label: '业务分类',
-      render: (row) => categoryText[String(row.category)] ?? String(row.category),
+      render: (row) => categoryText[String(row.category)] ?? enumLabel(row.category),
       sortable: false,
     },
     { key: 'amount', label: '金额', render: (row) => money(row.amount) },
@@ -277,10 +283,10 @@ function FinanceFilters({
           />
         </label>
       ) : null}
-      <Input
+      <DatePickerInput
         aria-label="财务月份筛选"
-        onChange={(event) => setParam('month', event.target.value || undefined)}
-        type="month"
+        mode="month"
+        onChange={(value) => setParam('month', value || undefined)}
         value={String(params.month ?? '')}
       />
       <Select
@@ -340,7 +346,7 @@ function FinanceContext({ row, view }: { row?: MasterRow; view: FinanceListView 
   const amount = row.balance ?? row.outstandingAmount ?? row.amount ?? row.originalAmount;
   const details = [
     ['业务编号', row.code],
-    ['状态', statusText[String(row.status)] ?? row.status],
+    ['状态', statusText[String(row.status)] ?? enumLabel(row.status)],
     ['金额', amount],
     ['账户', (row.account as { name?: string } | undefined)?.name],
     ['发生时间', row.occurredAt ?? row.createdAt],
@@ -362,7 +368,7 @@ function FinanceContext({ row, view }: { row?: MasterRow; view: FinanceListView 
                 {label === '金额'
                   ? money(value)
                   : label === '发生时间'
-                    ? new Date(String(value)).toLocaleString('zh-CN')
+                    ? formatDate(value)
                     : String(value)}
               </dd>
             </div>
@@ -610,30 +616,39 @@ export function FinancePage() {
     ? (rawView as FinanceView)
     : 'accounts';
   const [dialog, setDialog] = useState<FinanceDialogKind>();
+  const expenseView = view === 'expenses';
   return (
     <section className="page-section inventory-page finance-page">
       <header className="page-heading inventory-heading">
         <div>
-          <span className="eyebrow">业务财务</span>
-          <h1>资金与经营分析中心</h1>
+          <span className="eyebrow">{expenseView ? '日常经营' : '业务财务'}</span>
+          <h1>{expenseView ? '日常开销账单' : '资金与经营分析中心'}</h1>
           <p>
-            应收应付与真实资金流分离；按月份、渠道、客户、供应商、采购渠道和采购员追踪经营结果。
+            {expenseView
+              ? '记录耗材、资质办理等日常费用；账单过账后自动进入资金流水与月度财务汇总。'
+              : '应收应付与真实资金流分离；按月份、渠道、客户、供应商、采购渠道和采购员追踪经营结果。'}
           </p>
         </div>
-        <div className="page-actions">
-          <Button onClick={() => setDialog('payment')} variant="ghost">
-            <ArrowUpCircle size={17} /> 付款
+        {expenseView ? (
+          <Button onClick={() => setDialog('expense')}>
+            <Plus size={17} /> 新建开销账单
           </Button>
-          <Button onClick={() => setDialog('receipt')} variant="ghost">
-            <ArrowDownCircle size={17} /> 收款
-          </Button>
-          <Button onClick={() => setDialog('adjustment')} variant="ghost">
-            <ListFilter size={17} /> 调整/费用
-          </Button>
-          <Button onClick={() => setDialog('account')}>
-            <Plus size={17} /> 资金账户
-          </Button>
-        </div>
+        ) : (
+          <div className="page-actions">
+            <Button onClick={() => setDialog('payment')} variant="ghost">
+              <ArrowUpCircle size={17} /> 付款
+            </Button>
+            <Button onClick={() => setDialog('receipt')} variant="ghost">
+              <ArrowDownCircle size={17} /> 收款
+            </Button>
+            <Button onClick={() => setDialog('adjustment')} variant="ghost">
+              <ListFilter size={17} /> 调整/费用
+            </Button>
+            <Button onClick={() => setDialog('account')}>
+              <Plus size={17} /> 资金账户
+            </Button>
+          </div>
+        )}
       </header>
       <nav aria-label="财务视图" className="inventory-tabs quality-tabs">
         {views.map(({ id, label, icon: Icon }) => (
@@ -647,7 +662,14 @@ export function FinancePage() {
           </button>
         ))}
       </nav>
-      {view === 'analytics' ? (
+      {view === 'expenses' ? (
+        <ExpenseContent
+          keyword={keyword}
+          params={params}
+          setKeyword={setKeyword}
+          setParam={setParam}
+        />
+      ) : view === 'analytics' ? (
         <AnalyticsContent
           keyword={keyword}
           params={params}

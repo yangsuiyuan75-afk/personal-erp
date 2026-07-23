@@ -189,6 +189,24 @@ export class CreateSalesIssueDto {
   items!: SalesIssueItemDto[];
 }
 
+export class UpdateSalesIssueDto {
+  @IsUUID()
+  locationId!: string;
+
+  @IsOptional()
+  @IsNumberString()
+  quantity?: string;
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  occurredAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  remark?: string;
+}
+
 export class SalesReturnItemDto {
   @IsUUID()
   salesIssueItemId!: string;

@@ -1,29 +1,30 @@
-# Product Design QA
+# Daily Expense Ledger Design QA
 
-- Reference: `C:\Users\73504\.codex\generated_images\019f6aa8-5961-7da2-9e79-6e5e9a383d2a\exec-7a2da95b-fcc6-4534-a9bc-1255fea8795f.png`
-- Surface: `/inventory`
-- Direction: data-first inventory workspace
-- Compared states: desktop inventory balance with selected row and populated context rail
-- Responsive checks: desktop 1265×712, tablet 1024×900, mobile 390×844
+- Reference: `C:\Users\73504\.codex\generated_images\019f8828-cf8f-7652-a9ef-210010be2f46\exec-30d5a279-ff58-48a6-ac72-88ecbabb332c.png`
+- Implementation: `F:\personal-erp\output\product-design\daily-expenses-option1-implementation.png`
+- Comparison: `F:\personal-erp\output\product-design\daily-expenses-comparison.png`
+- Form state: `F:\personal-erp\output\product-design\daily-expenses-form.png`
+- Mobile evidence: `F:\personal-erp\output\product-design\daily-expenses-mobile.png`
+- Route: `http://localhost:5173/finance?view=expenses`
+- Desktop viewport: 1440 x 1024 CSS pixels, 1x density, light theme, Chromium.
+- Mobile viewport: 390 x 844 CSS pixels, 1x density, light theme, Chromium.
+- State: authenticated daily-expense ledger, current month, eight isolated QA bills with posted and draft states, selected-row summary visible. The production database was not seeded.
 
-## Resolved findings
+## Comparison findings
 
-- P1: removed the KPI-card wall and made the table the primary workspace.
-- P1: added one unified toolbar for keyword, warehouse, stock status, category, date filters, reset, secondary operations, and the primary transfer action.
-- P1: added server-side category filtering and verified query state remains synchronized with the URL.
-- P1: aligned the selected inventory row with a persistent context rail containing availability, moving average cost, location distribution, FIFO batches, and a recommended transfer action.
-- P1: tightened the desktop sidebar, table density, sticky action column, and toolbar so important columns remain readable without visible clipping.
-- P1: verified collapsed tablet navigation and a compact mobile layout with stacked filters, two-column view tabs, and horizontally scrollable table details.
-- P2: grouped opening inventory and stock adjustment in a secondary business menu and made it close after selection.
-- P2: added keyboard activation and visible focus treatment to selectable DataTable rows.
-- P2: verified light, dark, and system theme controls; default remains light.
+- Preserved the existing Iris Operations shell and navigation while matching the selected ledger-first hierarchy: title and primary action, three monthly KPIs, one-row filters, ledger table, and a right-side bill context panel.
+- Kept the selected teal, amber, and indigo status accents within the established color tokens.
+- The populated capture uses an isolated test database with realistic fixture bills; posted and draft amounts reconcile with the KPI totals. The production database remains unchanged.
+- The create dialog exposes category, date-only picker, item, payee, account, and amount in a compact two-column form; no unnecessary database identifiers are shown.
+- At 390 px the navigation collapses to an icon rail, the primary action becomes full width, tabs wrap cleanly, and KPI/filter content stacks without clipping.
+- Browser console check: no warnings or errors.
+- Primary interactions checked: authentication, new-bill dialog open/close, generic detail view, ledger-row selection, and right-side finance-flow summary.
 
-## Interaction and quality checks
+## Iterations
 
-- Warehouse, stock status, category, date, search, reset, tabs, business menu, row selection, column menu, pagination, and transfer/opening dialogs are operable.
-- Category selection changed the URL and server result count; reset returned the URL and data set to the unfiltered state.
-- Desktop, tablet, and mobile layouts were visually inspected in the in-app browser.
-- The final direct application tab reported no console warnings or errors.
-- The final desktop implementation and reference were reviewed together in one comparison input after all fixes.
+1. Initial desktop capture exposed the status filter wrapping onto a second line.
+2. Reduced expense-only filter widths while preserving readable labels; final desktop capture keeps all five filters on one row.
+3. Rechecked the create dialog and mobile layout after the CSS adjustment.
+4. Loaded eight isolated QA bills, selected a posted bill, and repeated the side-by-side comparison against the selected reference.
 
 final result: passed

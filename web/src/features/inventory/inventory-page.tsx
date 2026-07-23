@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { DateRangePickerInput } from '@/components/ui/date-picker';
 import { Input, Select } from '@/components/ui/field';
 import { apiErrorMessage } from '@/lib/api-error';
+import { enumLabel } from '@/lib/enum-label';
 import type { MasterRow } from '@/features/master-data/api';
 import { useListUrlState } from '@/features/master-data/use-list-url-state';
 import { useMasterOptions } from '@/features/master-data/use-master-data';
@@ -89,7 +90,7 @@ function columnsFor(view: InventoryView): DataTableColumn[] {
         label: '库存状态',
         render: (row) => (
           <span className={`stock-pill stock-${String(row.stockStatus).toLowerCase()}`}>
-            {statusLabels[String(row.stockStatus)] ?? String(row.stockStatus)}
+            {statusLabels[String(row.stockStatus)] ?? enumLabel(row.stockStatus)}
           </span>
         ),
         sortable: false,
@@ -116,7 +117,7 @@ function columnsFor(view: InventoryView): DataTableColumn[] {
       {
         key: 'type',
         label: '业务类型',
-        render: (row) => transactionLabels[String(row.type)] ?? String(row.type),
+        render: (row) => transactionLabels[String(row.type)] ?? enumLabel(row.type),
         sortable: false,
       },
       { key: 'sourceType', label: '来源单据', sortable: false },
@@ -129,7 +130,7 @@ function columnsFor(view: InventoryView): DataTableColumn[] {
     return [
       { key: 'code', label: '地点代码' },
       { key: 'name', label: '地点名称' },
-      { key: 'type', label: '类型', sortable: false },
+      { key: 'type', label: '类型', render: (row) => enumLabel(row.type), sortable: false },
       { key: 'salesChannel.name', label: '销售渠道', sortable: false },
       { key: 'parent.name', label: '上级地点', sortable: false },
       {

@@ -172,6 +172,15 @@ enum FinancialTransactionCategory {
   ACCOUNT_ADJUSTMENT
 }
 
+enum ExpenseCategory {
+  OFFICE_SUPPLIES
+  QUALIFICATION
+  PREMISES
+  UTILITIES
+  TRAVEL
+  OTHER
+}
+
 enum StorageProviderType {
   ONEDRIVE
   MOCK_LOCAL
@@ -353,7 +362,6 @@ model PurchaseChannel {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   suppliers             Supplier[]
-  buyers                BuyerPurchaseChannel[]
   purchasePrices        PurchasePrice[]
   purchaseOrders        PurchaseOrder[]
   payables              Payable[]
@@ -401,7 +409,6 @@ model Buyer {
   status                MasterDataStatus       @default(ACTIVE)
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
-  channels              BuyerPurchaseChannel[]
   purchasePrices        PurchasePrice[]
   purchaseOrders        PurchaseOrder[]
   payables              Payable[]
@@ -410,15 +417,6 @@ model Buyer {
   financialTransactions FinancialTransaction[]
 
   @@index([status, createdAt])
-}
-
-model BuyerPurchaseChannel {
-  buyerId           String          @db.Uuid
-  purchaseChannelId String          @db.Uuid
-  buyer             Buyer           @relation(fields: [buyerId], references: [id], onDelete: Restrict)
-  purchaseChannel   PurchaseChannel @relation(fields: [purchaseChannelId], references: [id], onDelete: Restrict)
-
-  @@id([buyerId, purchaseChannelId])
 }
 
 model SalesChannel {
@@ -1004,29 +1002,29 @@ model SalesOrderItem {
 }
 
 model SalesIssue {
-  id             String            @id @default(uuid()) @db.Uuid
-  issueNo        String            @unique
-  salesOrderId   String            @db.Uuid
-  salesChannelId String            @db.Uuid
-  customerId     String?           @db.Uuid
-  locationId     String            @db.Uuid
-  status         DocumentStatus    @default(DRAFT)
+  id             String             @id @default(uuid()) @db.Uuid
+  issueNo        String             @unique
+  salesOrderId   String             @db.Uuid
+  salesChannelId String             @db.Uuid
+  customerId     String?            @db.Uuid
+  locationId     String?            @db.Uuid
+  status         DocumentStatus     @default(DRAFT)
   occurredAt     DateTime
   remark         String?
-  totalRevenue   Decimal           @db.Decimal(30, 4)
-  totalCost      Decimal           @default(0) @db.Decimal(30, 4)
+  totalRevenue   Decimal            @db.Decimal(30, 4)
+  totalCost      Decimal            @default(0) @db.Decimal(30, 4)
   postedAt       DateTime?
-  transactionId  String?           @unique @db.Uuid
-  receivableId   String?           @unique @db.Uuid
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  salesOrder     SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Restrict)
-  salesChannel   SalesChannel      @relation(fields: [salesChannelId], references: [id], onDelete: Restrict)
-  customer       Customer?         @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  location       InventoryLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  transactionId  String?            @unique @db.Uuid
+  receivableId   String?            @unique @db.Uuid
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  salesOrder     SalesOrder         @relation(fields: [salesOrderId], references: [id], onDelete: Restrict)
+  salesChannel   SalesChannel       @relation(fields: [salesChannelId], references: [id], onDelete: Restrict)
+  customer       Customer?          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  location       InventoryLocation? @relation(fields: [locationId], references: [id], onDelete: Restrict)
   items          SalesIssueItem[]
   returns        SalesReturn[]
-  receivable     Receivable?       @relation("IssueReceivable", fields: [receivableId], references: [id], onDelete: Restrict)
+  receivable     Receivable?        @relation("IssueReceivable", fields: [receivableId], references: [id], onDelete: Restrict)
 
   @@index([salesChannelId, status, occurredAt])
   @@index([customerId, occurredAt])
@@ -1463,6 +1461,8 @@ model AccountAdjustment {
   supplierId        String?                      @db.Uuid
   purchaseChannelId String?                      @db.Uuid
   buyerId           String?                      @db.Uuid
+  expenseCategory   ExpenseCategory?
+  payee             String?
   status            DocumentStatus               @default(DRAFT)
   occurredAt        DateTime
   reason            String
@@ -1480,6 +1480,7 @@ model AccountAdjustment {
 
   @@index([accountId, status, occurredAt])
   @@index([category, occurredAt])
+  @@index([expenseCategory, status, occurredAt])
 }
 
 model FinancialTransaction {

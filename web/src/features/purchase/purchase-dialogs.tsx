@@ -1,6 +1,7 @@
 import { Dialog } from '@base-ui/react/dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -209,27 +210,37 @@ const orderSchema = z.object({
   remark: z.string().max(1000).optional(),
 });
 
-function OrderDialog({ open, onOpenChange }: DialogProps) {
+function orderDefaults(order?: MasterRow): z.infer<typeof orderSchema> {
+  const item = Array.isArray(order?.items) ? (order.items[0] as MasterRow | undefined) : undefined;
+  const relationId = (value: unknown) =>
+    value && typeof value === 'object' && 'id' in value ? String(value.id) : '';
+  return {
+    supplierId: relationId(order?.supplier),
+    buyerId: relationId(order?.buyer),
+    purchaseChannelId: relationId(order?.purchaseChannel),
+    skuId: relationId(item?.sku),
+    quantity: String(item?.quantity ?? ''),
+    unitPrice: String(item?.unitPrice ?? ''),
+    orderDate: String(order?.orderDate ?? today()).slice(0, 10),
+    expectedAt: order?.expectedAt ? String(order.expectedAt).slice(0, 10) : '',
+    remark: String(order?.remark ?? ''),
+  };
+}
+
+function OrderDialog({ open, onOpenChange, order }: DialogProps & { order?: MasterRow }) {
   const options = useReferenceOptions();
   const mutations = usePurchaseMutations();
   const notify = useToast();
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
-    defaultValues: {
-      supplierId: '',
-      buyerId: '',
-      purchaseChannelId: '',
-      skuId: '',
-      quantity: '',
-      unitPrice: '',
-      orderDate: today(),
-      expectedAt: '',
-      remark: '',
-    },
+    defaultValues: orderDefaults(),
   });
+  useEffect(() => {
+    if (open) form.reset(orderDefaults(order));
+  }, [form, open, order]);
   const submit = async (values: z.infer<typeof orderSchema>) => {
     try {
-      const order = await mutations.order.mutateAsync({
+      const payload = {
         supplierId: values.supplierId,
         buyerId: values.buyerId,
         purchaseChannelId: values.purchaseChannelId,
@@ -238,9 +249,10 @@ function OrderDialog({ open, onOpenChange }: DialogProps) {
         expectedAt: values.expectedAt ? new Date(values.expectedAt).toISOString() : undefined,
         remark: values.remark,
         items: [{ skuId: values.skuId, quantity: values.quantity, unitPrice: values.unitPrice }],
-      });
-      await mutations.transition.mutateAsync({ kind: 'orders', id: order.id, action: 'confirm' });
-      notify('采购订单已创建并确认', 'success');
+      };
+      if (order) await mutations.orderUpdate.mutateAsync({ id: order.id, payload });
+      else await mutations.order.mutateAsync(payload);
+      notify(order ? '采购订单已更新' : '采购订单已创建', 'success');
       form.reset();
       onOpenChange(false);
     } catch (error) {
@@ -249,10 +261,10 @@ function OrderDialog({ open, onOpenChange }: DialogProps) {
   };
   return (
     <Shell
-      description="成交单价写入订单快照；确认后只能通过收货、退货或取消继续流转。"
+      description="确认前或尚未创建收货单时可修改；已有收货单后保留原成交快照。"
       onOpenChange={onOpenChange}
       open={open}
-      title="新建采购订单"
+      title={order ? '编辑采购订单' : '新建采购订单'}
     >
       <form className="dialog-form" onSubmit={form.handleSubmit(submit)}>
         <div className="form-grid">
@@ -307,8 +319,8 @@ function OrderDialog({ open, onOpenChange }: DialogProps) {
           </Field>
         </div>
         <Actions
-          label="创建并确认"
-          pending={mutations.order.isPending || mutations.transition.isPending}
+          label={order ? '保存修改' : '创建采购订单'}
+          pending={mutations.order.isPending || mutations.orderUpdate.isPending}
         />
       </form>
     </Shell>
@@ -547,28 +559,27 @@ interface DialogProps {
 export function PurchaseDialogs({
   active,
   onOpenChange,
+  order,
 }: {
   active?: PurchaseDialogKind;
   onOpenChange: (kind?: PurchaseDialogKind) => void;
+  order?: MasterRow;
 }) {
-  return (
-    <>
-      <PriceDialog
-        open={active === 'price'}
-        onOpenChange={(open) => onOpenChange(open ? 'price' : undefined)}
-      />
+  if (active === 'price')
+    return <PriceDialog onOpenChange={(open) => onOpenChange(open ? 'price' : undefined)} open />;
+  if (active === 'order')
+    return (
       <OrderDialog
-        open={active === 'order'}
         onOpenChange={(open) => onOpenChange(open ? 'order' : undefined)}
+        open
+        order={order}
       />
-      <ReceiptDialog
-        open={active === 'receipt'}
-        onOpenChange={(open) => onOpenChange(open ? 'receipt' : undefined)}
-      />
-      <ReturnDialog
-        open={active === 'return'}
-        onOpenChange={(open) => onOpenChange(open ? 'return' : undefined)}
-      />
-    </>
-  );
+    );
+  if (active === 'receipt')
+    return (
+      <ReceiptDialog onOpenChange={(open) => onOpenChange(open ? 'receipt' : undefined)} open />
+    );
+  if (active === 'return')
+    return <ReturnDialog onOpenChange={(open) => onOpenChange(open ? 'return' : undefined)} open />;
+  return null;
 }

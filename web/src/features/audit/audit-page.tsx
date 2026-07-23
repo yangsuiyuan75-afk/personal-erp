@@ -4,6 +4,7 @@ import { DataTable } from '@/components/data-table/data-table';
 import { Input, Select } from '@/components/ui/field';
 import { apiClient } from '@/lib/axios/client';
 import { apiErrorMessage } from '@/lib/api-error';
+import { auditActionLabel, enumLabel } from '@/lib/enum-label';
 import type { MasterListResponse, MasterRow } from '@/features/master-data/api';
 import { useListUrlState } from '@/features/master-data/use-list-url-state';
 
@@ -50,14 +51,30 @@ export function AuditPage() {
         </div>
         <DataTable
           columns={[
-            { key: 'module', label: '模块', sortable: false },
-            { key: 'action', label: '操作', sortable: false },
-            { key: 'entityType', label: '实体', sortable: false },
+            {
+              key: 'module',
+              label: '模块',
+              render: (row) => enumLabel(row.module),
+              sortable: false,
+            },
+            {
+              key: 'action',
+              label: '操作',
+              render: (row) => auditActionLabel(row.action),
+              sortable: false,
+            },
+            {
+              key: 'entityType',
+              label: '实体',
+              render: (row) => enumLabel(row.entityType),
+              sortable: false,
+            },
             { key: 'entityId', label: '实体 ID', sortable: false },
             { key: 'result', label: '结果', sortable: false },
             { key: 'createdAt', label: '时间' },
           ]}
           error={query.error ? apiErrorMessage(query.error) : undefined}
+          detailHiddenKeys={['code', 'name', 'status']}
           loading={query.isLoading}
           meta={query.data?.meta}
           onPageChange={(page) => setParam('page', String(page), false)}

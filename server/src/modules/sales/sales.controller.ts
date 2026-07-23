@@ -21,6 +21,7 @@ import {
   CreateSalesReturnDto,
   ResolveSalesPriceDto,
   SalesQueryDto,
+  UpdateSalesIssueDto,
   UpdateSalesPriceDto,
 } from './dto/sales.dto';
 import { SalesService } from './sales.service';
@@ -104,6 +105,16 @@ export class SalesController {
     @Req() request: RequestWithId,
   ) {
     return this.sales.createIssue(payload, actor, request.requestId);
+  }
+
+  @Patch('issues/:id')
+  updateIssue(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() payload: UpdateSalesIssueDto,
+    @CurrentUser() actor: AuthUser,
+    @Req() request: RequestWithId,
+  ) {
+    return this.sales.updateIssue(id, payload, actor, request.requestId);
   }
 
   @Post('issues/:id/post')

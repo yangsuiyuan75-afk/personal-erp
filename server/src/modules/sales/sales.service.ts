@@ -29,6 +29,7 @@ import type {
   CreateSalesReturnDto,
   ResolveSalesPriceDto,
   SalesQueryDto,
+  UpdateSalesIssueDto,
   UpdateSalesPriceDto,
 } from './dto/sales.dto';
 
@@ -276,22 +277,56 @@ export class SalesService {
       (sum, item) => sum.plus(item.lineAmount),
       new Prisma.Decimal(0),
     );
-    const data = await this.prisma.salesOrder.create({
-      data: {
-        orderNo: businessNo('SO'),
-        salesChannelId: payload.salesChannelId,
-        customerId: payload.customerId,
-        currency: payload.currency.toUpperCase(),
-        orderDate: at,
-        remark: payload.remark,
-        totalAmount,
-        items: { create: items },
-      },
-      include: {
-        salesChannel: true,
-        customer: true,
-        items: { include: { sku: true } },
-      },
+    const channel = await this.prisma.salesChannel.findUniqueOrThrow({
+      where: { id: payload.salesChannelId },
+      select: { defaultLocationId: true },
+    });
+    const data = await this.prisma.$transaction(async (transaction) => {
+      const order = await transaction.salesOrder.create({
+        data: {
+          orderNo: businessNo('SO'),
+          salesChannelId: payload.salesChannelId,
+          customerId: payload.customerId,
+          currency: payload.currency.toUpperCase(),
+          orderDate: at,
+          remark: payload.remark,
+          totalAmount,
+          items: { create: items },
+        },
+        include: { items: true },
+      });
+      for (const item of order.items) {
+        await transaction.salesIssue.create({
+          data: {
+            issueNo: businessNo('SI'),
+            salesOrderId: order.id,
+            salesChannelId: order.salesChannelId,
+            customerId: order.customerId,
+            locationId: channel.defaultLocationId,
+            occurredAt: order.orderDate,
+            totalRevenue: item.lineAmount,
+            items: {
+              create: {
+                salesOrderItemId: item.id,
+                skuId: item.skuId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                revenueAmount: item.lineAmount,
+                remark: item.remark,
+              },
+            },
+          },
+        });
+      }
+      return transaction.salesOrder.findUniqueOrThrow({
+        where: { id: order.id },
+        include: {
+          salesChannel: true,
+          customer: true,
+          items: { include: { sku: true } },
+          issues: { include: { items: { include: { sku: true } } } },
+        },
+      });
     });
     await this.audit.record({
       userId: actor.id,
@@ -339,9 +374,15 @@ export class SalesService {
       });
     if (before.items.some((item) => item.issuedQuantity.greaterThan(0)))
       throw new ConflictException({ code: 'ORDER_ISSUED', message: '已有出库的销售订单不能取消' });
-    const after = await this.prisma.salesOrder.update({
-      where: { id },
-      data: { status: SalesOrderStatus.CANCELLED },
+    const after = await this.prisma.$transaction(async (transaction) => {
+      await transaction.salesIssue.updateMany({
+        where: { salesOrderId: id, status: DocumentStatus.DRAFT },
+        data: { status: DocumentStatus.CANCELLED },
+      });
+      return transaction.salesOrder.update({
+        where: { id },
+        data: { status: SalesOrderStatus.CANCELLED },
+      });
     });
     await this.audit.record({
       userId: actor.id,
@@ -479,6 +520,90 @@ export class SalesService {
     return data;
   }
 
+  async updateIssue(id: string, payload: UpdateSalesIssueDto, actor: AuthUser, requestId?: string) {
+    const before = await this.prisma.salesIssue.findUnique({
+      where: { id },
+      include: {
+        items: true,
+        salesOrder: { include: { items: true } },
+        salesChannel: true,
+      },
+    });
+    if (!before) throw new NotFoundException({ code: 'NOT_FOUND', message: '销售出库单不存在' });
+    if (before.status !== DocumentStatus.DRAFT)
+      throw new ConflictException({
+        code: 'ISSUE_STATE_INVALID',
+        message: '只有草稿销售出库单可以编辑',
+      });
+    if (
+      before.salesOrder.status !== SalesOrderStatus.CONFIRMED &&
+      before.salesOrder.status !== SalesOrderStatus.PARTIALLY_ISSUED
+    )
+      throw new ConflictException({
+        code: 'ORDER_STATE_INVALID',
+        message: '销售订单未确认或已全部出库',
+      });
+    if (before.items.length !== 1)
+      throw new ConflictException({
+        code: 'ISSUE_ITEM_COUNT_INVALID',
+        message: '待处理销售出库单必须包含一条明细',
+      });
+
+    await this.assertIssueLocation(before.salesChannel, payload.locationId);
+    const item = before.items[0];
+    const orderItem = before.salesOrder.items.find(
+      (candidate) => candidate.id === item.salesOrderItemId,
+    );
+    if (!orderItem)
+      throw new ConflictException({
+        code: 'ORDER_ITEM_INVALID',
+        message: '销售出库明细未关联销售订单明细',
+      });
+    const quantity = payload.quantity
+      ? positive(payload.quantity, '销售数量')
+      : orderItem.quantity.minus(orderItem.issuedQuantity);
+    if (quantity.greaterThan(orderItem.quantity.minus(orderItem.issuedQuantity)))
+      throw new UnprocessableEntityException({
+        code: 'ISSUE_QUANTITY_EXCEEDED',
+        message: '销售数量超过销售订单未出库数量',
+      });
+    const occurredAt = payload.occurredAt
+      ? new Date(payload.occurredAt)
+      : before.salesOrder.orderDate;
+    const after = await this.prisma.salesIssue.update({
+      where: { id },
+      data: {
+        locationId: payload.locationId,
+        occurredAt,
+        remark: payload.remark,
+        totalRevenue: quantity.mul(item.unitPrice),
+        items: {
+          update: {
+            where: { id: item.id },
+            data: { quantity, revenueAmount: quantity.mul(item.unitPrice) },
+          },
+        },
+      },
+      include: {
+        items: { include: { sku: true } },
+        salesChannel: true,
+        customer: true,
+        location: true,
+      },
+    });
+    await this.audit.record({
+      userId: actor.id,
+      module: 'SALES',
+      action: 'UPDATE_ISSUE',
+      entityType: 'SalesIssue',
+      entityId: id,
+      before,
+      after,
+      requestId,
+    });
+    return after;
+  }
+
   async postIssue(id: string, idempotencyKey: string, actor: AuthUser, requestId?: string) {
     const issue = await this.prisma.salesIssue.findUnique({
       where: { id },
@@ -489,6 +614,20 @@ export class SalesService {
       },
     });
     if (!issue) throw new NotFoundException({ code: 'NOT_FOUND', message: '销售出库单不存在' });
+    if (!issue.locationId)
+      throw new UnprocessableEntityException({
+        code: 'LOCATION_REQUIRED',
+        message: '请先选择销售出库地点',
+      });
+    if (
+      issue.salesOrder.status !== SalesOrderStatus.CONFIRMED &&
+      issue.salesOrder.status !== SalesOrderStatus.PARTIALLY_ISSUED
+    )
+      throw new ConflictException({
+        code: 'ORDER_STATE_INVALID',
+        message: '销售订单未确认或已全部出库',
+      });
+    const locationId = issue.locationId;
     return this.posting.post(
       {
         scope: `SALES_ISSUE:${id}`,
@@ -498,7 +637,7 @@ export class SalesService {
         sourceType: 'SalesIssue',
         sourceId: id,
         lines: issue.items.map((item) => ({
-          locationId: issue.locationId,
+          locationId,
           skuId: item.skuId,
           stockStatus: InventoryStockStatus.AVAILABLE,
           quantity: item.quantity.negated(),
@@ -510,7 +649,7 @@ export class SalesService {
           if (!locked || locked.status !== DocumentStatus.DRAFT)
             throw new ConflictException({ code: 'DOCUMENT_POSTED', message: '销售出库单已过账' });
           if (issue.salesChannel.inventoryMode === ChannelInventoryMode.VIRTUAL_ALLOCATION)
-            await this.consumeVirtualAllocation(transaction, issue);
+            await this.consumeVirtualAllocation(transaction, { ...issue, locationId });
           let totalCost = new Prisma.Decimal(0);
           for (const item of issue.items) {
             const line = await transaction.inventoryTransactionLine.findFirstOrThrow({
@@ -551,6 +690,34 @@ export class SalesService {
               status: fullyIssued ? SalesOrderStatus.ISSUED : SalesOrderStatus.PARTIALLY_ISSUED,
             },
           });
+          for (const orderItem of orderItems) {
+            const issueItem = issue.items.find(
+              (candidate) => candidate.salesOrderItemId === orderItem.id,
+            );
+            const remaining = orderItem.quantity.minus(orderItem.issuedQuantity);
+            if (!issueItem || remaining.lessThanOrEqualTo(0)) continue;
+            await transaction.salesIssue.create({
+              data: {
+                issueNo: businessNo('SI'),
+                salesOrderId: issue.salesOrderId,
+                salesChannelId: issue.salesChannelId,
+                customerId: issue.customerId,
+                locationId,
+                occurredAt: issue.salesOrder.orderDate,
+                totalRevenue: remaining.mul(issueItem.unitPrice),
+                items: {
+                  create: {
+                    salesOrderItemId: orderItem.id,
+                    skuId: issueItem.skuId,
+                    quantity: remaining,
+                    unitPrice: issueItem.unitPrice,
+                    revenueAmount: remaining.mul(issueItem.unitPrice),
+                    remark: issueItem.remark,
+                  },
+                },
+              },
+            });
+          }
           const receivable = await transaction.receivable.create({
             data: {
               receivableNo: businessNo('REC'),
@@ -844,7 +1011,14 @@ export class SalesService {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.receivable.findMany({
         where,
-        include: { customer: true, salesChannel: true, adjustments: true, salesIssue: true },
+        include: {
+          customer: true,
+          salesChannel: true,
+          adjustments: true,
+          salesIssue: {
+            include: { items: { include: { sku: { select: { code: true, name: true } } } } },
+          },
+        },
         orderBy: { [query.sortBy]: query.sortOrder },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -871,7 +1045,13 @@ export class SalesService {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.customerRefund.findMany({
         where,
-        include: { customer: true, salesChannel: true, salesReturn: true },
+        include: {
+          customer: true,
+          salesChannel: true,
+          salesReturn: {
+            include: { items: { include: { sku: { select: { code: true, name: true } } } } },
+          },
+        },
         orderBy: { [query.sortBy]: query.sortOrder },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,

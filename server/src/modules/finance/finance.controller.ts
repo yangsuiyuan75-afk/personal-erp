@@ -16,6 +16,7 @@ import type { RequestWithId } from '../../common/middleware/request-id.middlewar
 import type { AuthUser } from '../auth/auth.types';
 import {
   CreateAccountAdjustmentDto,
+  CreateExpenseBillDto,
   CreateFinancialAccountDto,
   CreatePaymentDto,
   CreateReceiptDto,
@@ -115,6 +116,30 @@ export class FinanceController {
   @Get('adjustments')
   adjustments(@Query() query: FinanceQueryDto) {
     return this.finance.listAdjustments(query);
+  }
+
+  @Get('expenses')
+  expenses(@Query() query: FinanceQueryDto) {
+    return this.finance.listExpenseBills(query);
+  }
+
+  @Post('expenses')
+  createExpense(
+    @Body() payload: CreateExpenseBillDto,
+    @CurrentUser() actor: AuthUser,
+    @Req() request: RequestWithId,
+  ) {
+    return this.finance.createExpenseBill(payload, actor, request.requestId);
+  }
+
+  @Post('expenses/:id/post')
+  postExpense(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('idempotency-key') idempotencyKey: string,
+    @CurrentUser() actor: AuthUser,
+    @Req() request: RequestWithId,
+  ) {
+    return this.finance.postExpenseBill(id, idempotencyKey, actor, request.requestId);
   }
 
   @Post('adjustments')

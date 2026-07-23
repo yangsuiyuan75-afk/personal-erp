@@ -90,7 +90,7 @@ describe('Phase 1 auth and master data API (e2e)', () => {
     expect(list.body.data[0].product.name).toBe('无线耳机');
   });
 
-  it('forbids price fields on SKU and immutable code changes', async () => {
+  it('forbids price fields on SKU and allows audited business code changes', async () => {
     const auth = { Authorization: `Bearer ${accessToken}` };
     await request(app.getHttpServer())
       .post('/api/v1/master-data/skus')
@@ -105,11 +105,12 @@ describe('Phase 1 auth and master data API (e2e)', () => {
       })
       .expect(400);
 
-    await request(app.getHttpServer())
+    const updatedCategory = await request(app.getHttpServer())
       .patch(`/api/v1/master-data/categories/${categoryId}`)
       .set(auth)
       .send({ code: 'CHANGED' })
-      .expect(409);
+      .expect(200);
+    expect(updatedCategory.body.data.code).toBe('CHANGED');
   });
 
   it('streams safe CSV and records audit history', async () => {
@@ -119,7 +120,7 @@ describe('Phase 1 auth and master data API (e2e)', () => {
       .set(auth)
       .expect(200);
     expect(csv.headers['content-type']).toContain('text/csv');
-    expect(csv.text).toContain('AUDIO');
+    expect(csv.text).toContain('CHANGED');
 
     const audit = await request(app.getHttpServer())
       .get('/api/v1/audit-logs?page=1&pageSize=20')

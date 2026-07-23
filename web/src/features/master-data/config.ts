@@ -204,28 +204,20 @@ export const masterConfigs: Record<string, MasterConfig> = {
   buyers: {
     resource: 'buyers',
     title: '采购员',
-    description: '采购员是业务负责人，不是登录用户，可关联多个采购渠道。',
+    description: '采购员是业务负责人，不是登录用户。',
     schema: z.object({
       ...common,
       phone: optionalText,
-      purchaseChannelIds: z.array(z.string()).default([]),
     }),
     fields: [
       { name: 'code', label: '采购员代码', required: true },
       { name: 'name', label: '姓名', required: true },
       { name: 'phone', label: '联系电话' },
-      {
-        name: 'purchaseChannelIds',
-        label: '采购渠道',
-        type: 'multiselect',
-        optionResource: 'purchase-channels',
-      },
     ],
     columns: [
       { key: 'code', label: '代码' },
       { key: 'name', label: '采购员' },
       { key: 'phone', label: '联系电话' },
-      { key: 'channels', label: '采购渠道' },
       statusColumn,
     ],
   },

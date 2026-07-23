@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ListParams } from '@/features/master-data/api';
 import {
   createAdjustment,
+  createExpenseBill,
   createFinancialAccount,
   createPayment,
   createReceipt,
   getFinanceAnalytics,
   listFinance,
   listFinanceOptions,
+  listExpenseBills,
   postFinanceDocument,
   type FinanceListView,
   type FinanceOptionSource,
@@ -41,6 +43,13 @@ export function useFinanceAnalytics(params: ListParams) {
   });
 }
 
+export function useExpenseBills(params: ListParams) {
+  return useQuery({
+    queryKey: financeKeys.list('expenses', params),
+    queryFn: () => listExpenseBills(params),
+  });
+}
+
 export function useFinanceMutations() {
   const client = useQueryClient();
   const refresh = () => client.invalidateQueries();
@@ -49,9 +58,15 @@ export function useFinanceMutations() {
     payment: useMutation({ mutationFn: createPayment, onSuccess: refresh }),
     receipt: useMutation({ mutationFn: createReceipt, onSuccess: refresh }),
     adjustment: useMutation({ mutationFn: createAdjustment, onSuccess: refresh }),
+    expense: useMutation({ mutationFn: createExpenseBill, onSuccess: refresh }),
     post: useMutation({
-      mutationFn: ({ kind, id }: { kind: 'payments' | 'receipts' | 'adjustments'; id: string }) =>
-        postFinanceDocument(kind, id),
+      mutationFn: ({
+        kind,
+        id,
+      }: {
+        kind: 'payments' | 'receipts' | 'adjustments' | 'expenses';
+        id: string;
+      }) => postFinanceDocument(kind, id),
       onSuccess: refresh,
     }),
   };

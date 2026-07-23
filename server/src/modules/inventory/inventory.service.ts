@@ -134,7 +134,7 @@ export class InventoryService {
     await this.validateLocation(payload);
     const data = await this.prisma.inventoryLocation.create({
       data: {
-        code: payload.code.trim().toUpperCase(),
+        code: payload.code.trim(),
         name: payload.name.trim(),
         type: payload.type,
         parentId: payload.parentId,
@@ -415,8 +415,8 @@ export class InventoryService {
   }
 
   async previewOpening(rows: OpeningRowDto[]) {
-    const locationCodes = [...new Set(rows.map((row) => row.locationCode.trim().toUpperCase()))];
-    const skuCodes = [...new Set(rows.map((row) => row.skuCode.trim().toUpperCase()))];
+    const locationCodes = [...new Set(rows.map((row) => row.locationCode.trim()))];
+    const skuCodes = [...new Set(rows.map((row) => row.skuCode.trim()))];
     const batchNos = [...new Set(rows.map((row) => row.batchNo.trim()))];
     const [locations, skus, existingBatches] = await Promise.all([
       this.prisma.inventoryLocation.findMany({ where: { code: { in: locationCodes } } }),
@@ -434,8 +434,8 @@ export class InventoryService {
     let totalValue = new Prisma.Decimal(0);
     const previewRows = rows.map((row, index) => {
       const errors: string[] = [];
-      const location = locationMap.get(row.locationCode.trim().toUpperCase());
-      const sku = skuMap.get(row.skuCode.trim().toUpperCase());
+      const location = locationMap.get(row.locationCode.trim());
+      const sku = skuMap.get(row.skuCode.trim());
       if (!location || location.status !== MasterDataStatus.ACTIVE || !location.isLeaf)
         errors.push('库存地点不存在、已停用或不是叶子节点');
       if (!sku || sku.status !== MasterDataStatus.ACTIVE) errors.push('SKU 不存在或已停用');
@@ -962,7 +962,7 @@ export class InventoryService {
       )
         throw new UnprocessableEntityException({
           code: 'CHANNEL_MODE_INVALID',
-          message: '外部平台仓只能关联 EXTERNAL_WAREHOUSE 渠道',
+          message: '外部平台仓只能关联“外部平台仓”库存模式的销售渠道',
         });
     }
   }

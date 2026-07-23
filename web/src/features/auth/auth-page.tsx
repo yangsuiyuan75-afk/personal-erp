@@ -73,14 +73,10 @@ export function AuthPage({ mode }: { mode: 'bootstrap' | 'login' }) {
               : '登录后继续管理你的业务。'}
           </p>
           <Field label="用户名" error={errors.username?.message}>
-            <Input autoComplete="username" {...register('username')} />
+            <Input {...register('username')} />
           </Field>
           <Field label="密码" error={errors.password?.message}>
-            <Input
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              type="password"
-              {...register('password')}
-            />
+            <Input type="password" {...register('password')} />
           </Field>
           {mutation.error ? (
             <div className="form-alert">{apiErrorMessage(mutation.error)}</div>
@@ -115,7 +111,6 @@ export function AuthPage({ mode }: { mode: 'bootstrap' | 'login' }) {
                   </div>
                   <Field label="恢复密钥">
                     <Input
-                      autoComplete="off"
                       onChange={(event) => setRecoveryKey(event.target.value)}
                       type="password"
                       value={recoveryKey}
@@ -132,7 +127,6 @@ export function AuthPage({ mode }: { mode: 'bootstrap' | 'login' }) {
                   </label>
                   <Field label="输入确认短语：BOOTSTRAP RESTORE">
                     <Input
-                      autoComplete="off"
                       onChange={(event) => setConfirmPhrase(event.target.value)}
                       value={confirmPhrase}
                     />

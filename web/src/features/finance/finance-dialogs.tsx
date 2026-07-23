@@ -10,7 +10,7 @@ import { useMasterOptions } from '@/features/master-data/use-master-data';
 import { apiErrorMessage } from '@/lib/api-error';
 import { useFinanceMutations, useFinanceOptions } from './use-finance';
 
-export type FinanceDialogKind = 'account' | 'payment' | 'receipt' | 'adjustment';
+export type FinanceDialogKind = 'account' | 'payment' | 'receipt' | 'adjustment' | 'expense';
 
 interface DialogProps {
   open: boolean;
@@ -462,6 +462,89 @@ function ReceiptDialog({ open, onOpenChange }: DialogProps) {
   );
 }
 
+function ExpenseDialog({ open, onOpenChange }: DialogProps) {
+  const accounts = useFinanceOptions('accounts');
+  const mutations = useFinanceMutations();
+  const notify = useToast();
+  const [accountId, setAccountId] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('OFFICE_SUPPLIES');
+  const [reason, setReason] = useState('');
+  const [payee, setPayee] = useState('');
+  const [amount, setAmount] = useState('');
+  const [occurredAt, setOccurredAt] = useState(today());
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!accountId || !reason.trim() || !payee.trim() || !amount)
+      return notify('请完整填写开销事项、收款方、账户和金额', 'error');
+    try {
+      await mutations.expense.mutateAsync({
+        accountId,
+        expenseCategory,
+        reason,
+        payee,
+        amount,
+        occurredAt: new Date(occurredAt).toISOString(),
+      });
+      notify('开销账单已保存为草稿，过账后进入财务汇总', 'success');
+      setReason('');
+      setPayee('');
+      setAmount('');
+      onOpenChange(false);
+    } catch (error) {
+      notify(apiErrorMessage(error), 'error');
+    }
+  };
+  return (
+    <Shell
+      description="先保存账单，确认无误后过账；过账会扣减资金账户并进入月度财务汇总。"
+      onOpenChange={onOpenChange}
+      open={open}
+      title="新建开销账单"
+    >
+      <form className="dialog-form" onSubmit={submit}>
+        <div className="form-grid">
+          <Field label="开销类别">
+            <Select
+              onChange={(event) => setExpenseCategory(event.target.value)}
+              value={expenseCategory}
+            >
+              <option value="OFFICE_SUPPLIES">办公耗材</option>
+              <option value="QUALIFICATION">资质办理</option>
+              <option value="PREMISES">店铺费用</option>
+              <option value="UTILITIES">通讯水电</option>
+              <option value="TRAVEL">差旅交通</option>
+              <option value="OTHER">其他开销</option>
+            </Select>
+          </Field>
+          <Field label="开销日期">
+            <DatePickerInput onChange={setOccurredAt} value={occurredAt} />
+          </Field>
+          <Field label="开销事项">
+            <Input onChange={(event) => setReason(event.target.value)} value={reason} />
+          </Field>
+          <Field label="收款方">
+            <Input onChange={(event) => setPayee(event.target.value)} value={payee} />
+          </Field>
+          <Field label="资金账户">
+            <Select onChange={(event) => setAccountId(event.target.value)} value={accountId}>
+              <option value="">请选择</option>
+              <Options rows={accounts.data?.data.filter((row) => row.status === 'ACTIVE')} />
+            </Select>
+          </Field>
+          <Field label="金额">
+            <Input
+              inputMode="decimal"
+              onChange={(event) => setAmount(event.target.value)}
+              value={amount}
+            />
+          </Field>
+        </div>
+        <Actions label="保存开销账单" pending={mutations.expense.isPending} />
+      </form>
+    </Shell>
+  );
+}
+
 function AdjustmentDialog({ open, onOpenChange }: DialogProps) {
   const accounts = useFinanceOptions('accounts');
   const salesChannels = useMasterOptions('sales-channels');
@@ -581,24 +664,28 @@ export function FinanceDialogs({
   active?: FinanceDialogKind;
   onOpenChange: (kind?: FinanceDialogKind) => void;
 }) {
-  return (
-    <>
-      <AccountDialog
-        open={active === 'account'}
-        onOpenChange={(open) => onOpenChange(open ? 'account' : undefined)}
-      />
-      <PaymentDialog
-        open={active === 'payment'}
-        onOpenChange={(open) => onOpenChange(open ? 'payment' : undefined)}
-      />
-      <ReceiptDialog
-        open={active === 'receipt'}
-        onOpenChange={(open) => onOpenChange(open ? 'receipt' : undefined)}
-      />
+  if (active === 'account')
+    return (
+      <AccountDialog onOpenChange={(open) => onOpenChange(open ? 'account' : undefined)} open />
+    );
+  if (active === 'payment')
+    return (
+      <PaymentDialog onOpenChange={(open) => onOpenChange(open ? 'payment' : undefined)} open />
+    );
+  if (active === 'receipt')
+    return (
+      <ReceiptDialog onOpenChange={(open) => onOpenChange(open ? 'receipt' : undefined)} open />
+    );
+  if (active === 'adjustment')
+    return (
       <AdjustmentDialog
-        open={active === 'adjustment'}
         onOpenChange={(open) => onOpenChange(open ? 'adjustment' : undefined)}
+        open
       />
-    </>
-  );
+    );
+  if (active === 'expense')
+    return (
+      <ExpenseDialog onOpenChange={(open) => onOpenChange(open ? 'expense' : undefined)} open />
+    );
+  return null;
 }

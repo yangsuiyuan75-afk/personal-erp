@@ -6,7 +6,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { MasterDataStatus, Prisma } from '@prisma/client';
+import { FileAssetStatus, MasterDataStatus, Prisma } from '@prisma/client';
 import { paginationMeta, type ListQueryDto } from '../../common/dto/list-query.dto';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -26,13 +26,9 @@ const INCLUDES: Partial<Record<MasterResource, Record<string, unknown>>> = {
   products: {
     category: { select: { id: true, name: true, status: true } },
     images: {
-      where: { isPrimary: true },
-      take: 1,
-      include: {
-        fileAsset: {
-          select: { id: true, fileName: true, mimeType: true, status: true },
-        },
-      },
+      where: { fileAsset: { status: FileAssetStatus.SYNCED } },
+      orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
+      include: { fileAsset: { select: { id: true, fileName: true } } },
     },
   },
   skus: {
@@ -40,11 +36,6 @@ const INCLUDES: Partial<Record<MasterResource, Record<string, unknown>>> = {
     baseUnit: { select: { id: true, name: true, status: true } },
   },
   suppliers: { purchaseChannel: { select: { id: true, name: true, status: true } } },
-  buyers: {
-    channels: {
-      include: { purchaseChannel: { select: { id: true, name: true, status: true } } },
-    },
-  },
   customers: { defaultSalesChannel: { select: { id: true, name: true, status: true } } },
 };
 
@@ -272,7 +263,7 @@ export class MasterDataService {
     resource: MasterResource,
     payload: MasterDataPayloadDto,
   ): Promise<Record<string, unknown>> {
-    const code = required(payload.code, '代码').trim().toUpperCase();
+    const code = required(payload.code, '代码').trim();
     const name = required(payload.name, '名称').trim();
     return this.resourceData(resource, payload, { code, name }, true);
   }
@@ -282,9 +273,7 @@ export class MasterDataService {
     payload: MasterDataPayloadDto,
   ): Promise<Record<string, unknown>> {
     const common = {
-      ...(payload.code !== undefined
-        ? { code: required(payload.code.trim(), '代码').toUpperCase() }
-        : {}),
+      ...(payload.code !== undefined ? { code: required(payload.code.trim(), '代码') } : {}),
       ...(payload.name !== undefined ? { name: payload.name.trim() } : {}),
       ...(payload.status !== undefined ? { status: payload.status } : {}),
     };
@@ -365,24 +354,11 @@ export class MasterDataService {
             : {}),
         };
       }
-      case 'buyers': {
-        for (const id of payload.purchaseChannelIds ?? [])
-          await this.ensureActive('purchaseChannel', id);
+      case 'buyers':
         return {
           ...common,
           ...(payload.phone !== undefined ? { phone: payload.phone || null } : {}),
-          ...(payload.purchaseChannelIds !== undefined
-            ? {
-                channels: {
-                  ...(creating ? {} : { deleteMany: {} }),
-                  create: payload.purchaseChannelIds.map((purchaseChannelId) => ({
-                    purchaseChannelId,
-                  })),
-                },
-              }
-            : {}),
         };
-      }
       case 'sales-channels':
         return {
           ...common,

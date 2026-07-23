@@ -23,6 +23,8 @@ import { Field, Input, Select } from '@/components/ui/field';
 import type { ListParams } from '@/features/master-data/api';
 import { useListUrlState } from '@/features/master-data/use-list-url-state';
 import { apiErrorMessage } from '@/lib/api-error';
+import { formatDate } from '@/lib/date';
+import { enumLabel } from '@/lib/enum-label';
 import { downloadBackup, exportBackups, type BackupHistory, type BackupSystemStatus } from './api';
 import { useBackupList, useBackupMutations, useBackupStatus } from './use-backups';
 
@@ -50,18 +52,10 @@ function formatBytes(value: string | number | undefined): string {
   return `${(size / 1024 ** 3).toFixed(2)} GB`;
 }
 
-function formatDate(value?: string): string {
-  if (!value) return '—';
-  return new Intl.DateTimeFormat('zh-CN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
-
 function BackupStatusBadge({ status }: { status: string }) {
   return (
     <span className={`business-status backup-status-${status.toLowerCase()}`}>
-      {statusText[status] ?? status}
+      {statusText[status] ?? enumLabel(status)}
     </span>
   );
 }
@@ -76,7 +70,7 @@ function columns(): DataTableColumn[] {
           <DatabaseBackup size={17} />
           <div>
             <strong>{String(row.backupNo)}</strong>
-            <span>{triggerText[String(row.trigger)] ?? String(row.trigger)}</span>
+            <span>{triggerText[String(row.trigger)] ?? enumLabel(row.trigger)}</span>
           </div>
         </div>
       ),
@@ -238,7 +232,6 @@ function RestoreDialog({
               </div>
               <Field label="当前管理员密码">
                 <Input
-                  autoComplete="current-password"
                   onChange={(event) => setPassword(event.target.value)}
                   type="password"
                   value={password}
@@ -246,7 +239,6 @@ function RestoreDialog({
               </Field>
               <Field label={`输入确认短语：${expected}`}>
                 <Input
-                  autoComplete="off"
                   onChange={(event) => setConfirmPhrase(event.target.value)}
                   value={confirmPhrase}
                 />

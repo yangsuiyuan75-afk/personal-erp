@@ -24,6 +24,14 @@ export interface MasterListResponse {
   meta: PageMeta;
 }
 
+export interface ProductImage {
+  id: string;
+  fileAssetId: string;
+  isPrimary: boolean;
+  sortOrder: number;
+  fileAsset: { id: string; fileName: string };
+}
+
 export interface ListParams extends Record<string, unknown> {
   page: number;
   pageSize: number;
@@ -55,6 +63,7 @@ export interface ListParams extends Record<string, unknown> {
   accountId?: string;
   direction?: string;
   category?: string;
+  expenseCategory?: string;
   month?: string;
   provider?: string;
   fileStatus?: string;
@@ -106,4 +115,29 @@ export async function exportMasterData(resource: string, params: ListParams): Pr
   link.download = `${resource}.csv`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+export async function getProductImages(productId: string): Promise<ProductImage[]> {
+  const response = await apiClient.get<{ data: { images: ProductImage[] } }>(
+    `/files/products/${productId}/images`,
+  );
+  return response.data.data.images;
+}
+
+export async function uploadProductImages(productId: string, files: File[]): Promise<void> {
+  const body = new FormData();
+  files.forEach((file) => body.append('files', file));
+  await apiClient.post(`/files/products/${productId}/images`, body);
+}
+
+export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
+  await apiClient.delete(`/files/products/${productId}/images/${imageId}`);
+}
+
+export async function getProductImageBlob(productId: string, fileAssetId: string): Promise<Blob> {
+  const response = await apiClient.get<Blob>(
+    `/files/products/${productId}/images/${fileAssetId}/content`,
+    { responseType: 'blob' },
+  );
+  return response.data;
 }

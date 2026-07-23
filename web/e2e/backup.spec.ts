@@ -109,6 +109,15 @@ test('uses the unified data workspace, URL filters, manual backup and protected 
   await expect(page.getByRole('heading', { name: '数据库备份与恢复' })).toBeVisible();
   await expect(page.getByText(backup.backupNo, { exact: true }).first()).toBeVisible();
   await expect(page.getByText('上次备份后业务过账')).toBeVisible();
+  await expect(page.locator('.backup-filter-bar')).toHaveCSS('min-height', '52px');
+  await expect(page.getByRole('button', { name: '导出 CSV' })).toHaveCSS('white-space', 'nowrap');
+  expect(
+    await page.getByRole('textbox', { name: '搜索备份' }).evaluate((input) => {
+      const context = document.createElement('canvas').getContext('2d')!;
+      context.font = getComputedStyle(input).font;
+      return context.measureText(input.placeholder).width <= input.clientWidth;
+    }),
+  ).toBe(true);
 
   await page.getByRole('textbox', { name: '搜索备份' }).fill('BKP-2026');
   await expect(page).toHaveURL(/keyword=BKP-2026/);

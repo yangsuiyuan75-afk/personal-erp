@@ -1,21 +1,21 @@
 # Module Status
 
-| Phase | Module                          | Status                             | Notes                                                                                    |
-| ----: | ------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- |
-|     0 | Workspace / Docker / PostgreSQL | COMPLETE                           | PostgreSQL 17 Alpine；本机 5434、测试库 5433；Migration `202607160001_phase0_foundation` |
-|     0 | NestJS foundation               | COMPLETE                           | Health、Swagger、Pino、统一响应/错误、请求 ID；unit/integration/E2E 通过                 |
-|     0 | React / shadcn Base UI          | COMPLETE                           | Vite React TS、Tailwind、Base UI、Iris tokens；unit/E2E/build 通过                       |
-|     1 | Auth                            | COMPLETE                           | 单管理员初始化/登录/刷新轮换/退出；Argon2id、JWT、HttpOnly Cookie、审计                  |
-|     1 | Unified DataTable & Query       | COMPLETE                           | 服务端分页/筛选/排序；URL 同步；列设置、批量选择、骨架/空/错状态、CSV                    |
-|     1 | Master Data                     | COMPLETE                           | Category、Product、SKU、Unit、Supplier、Buyer、采购/销售渠道、Customer                   |
-|     2 | Inventory                       | COMPLETE                           | 多地点/平台仓、余额/流水、移动平均、FIFO 批次、期初、调整、调拨、渠道额度                |
-|     3 | Purchase                        | COMPLETE                           | 报价、采购订单/分批收货/退货、库存批次、应付调整与供应商退款应收                         |
-|     4 | Sales                           | COMPLETE                           | 售价优先级、订单/分批出库、真实渠道仓/虚拟额度、应收、退货待检与客户退款                 |
-|     5 | Quality & Supplier Claim        | COMPLETE                           | 退货质检守恒分流、质量库存、供应商索赔、换货/赔付/抵扣/报废及质量分析                    |
-|     6 | Finance                         | COMPLETE                           | 资金账户、分配式收付款、真实资金流水、费用调整与多维月度经营分析                         |
-|     7 | OneDrive & FileAsset            | WAITING_FOR_EXTERNAL_CONFIGURATION | 功能与模拟适配器已完成；真实连接仅待 `MICROSOFT_CLIENT_ID`                               |
-|     8 | Backup & Restore                | COMPLETE                           | custom dump、SHA、OneDrive/Mock、PRE_RESTORE、分层保留、Bootstrap 与健康检查             |
-|     8 | Final E2E & Acceptance          | COMPLETE                           | 全量门禁、完整迁移链、Bootstrap 恢复与 Product Design QA 全部通过                        |
+| Phase | Module                          | Status                             | Notes                                                                                          |
+| ----: | ------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------- |
+|     0 | Workspace / Docker / PostgreSQL | COMPLETE                           | PostgreSQL 17 Alpine；本机 5434、测试库 5433；Migration `202607160001_phase0_foundation`       |
+|     0 | NestJS foundation               | COMPLETE                           | Health、Swagger、Pino、统一响应/错误、请求 ID；unit/integration/E2E 通过                       |
+|     0 | React / shadcn Base UI          | COMPLETE                           | Vite React TS、Tailwind、Base UI、Iris tokens；unit/E2E/build 通过                             |
+|     1 | Auth                            | COMPLETE                           | 单管理员初始化/登录/刷新轮换/退出；Argon2id、JWT、HttpOnly Cookie、审计                        |
+|     1 | Unified DataTable & Query       | COMPLETE                           | 服务端分页/筛选/排序；URL 同步；日期按日展示；详情隐藏内部标识；列设置、选择、CSV              |
+|     1 | Master Data                     | COMPLETE                           | Category、Product、SKU、Unit、Supplier、Buyer、采购/销售渠道、Customer                         |
+|     2 | Inventory                       | COMPLETE                           | 多地点/平台仓、余额/流水、移动平均、FIFO 批次、期初、调整、调拨、渠道额度                      |
+|     3 | Purchase                        | COMPLETE                           | 报价、采购订单/分批收货/退货数量、库存批次、应付调整与供应商退款应收                           |
+|     4 | Sales                           | COMPLETE                           | 售价优先级、订单同步草稿出库、出库数量/日期默认、真实渠道仓/虚拟额度、应收、退货待检与客户退款 |
+|     5 | Quality & Supplier Claim        | COMPLETE                           | 退货质检守恒分流、质量库存、供应商索赔、换货/赔付/抵扣/报废及质量分析                          |
+|     6 | Finance                         | COMPLETE                           | 资金账户、日常开销账单、分配式收付款、真实资金流水、费用调整与多维月度经营分析                 |
+|     7 | OneDrive 设置                   | WAITING_FOR_EXTERNAL_CONFIGURATION | 仅保留授权设置与备份内部存储；真实连接仅待 `MICROSOFT_CLIENT_ID`                               |
+|     8 | Backup & Restore                | COMPLETE                           | custom dump、SHA、OneDrive/Mock、PRE_RESTORE、分层保留、Bootstrap 与健康检查                   |
+|     8 | Final E2E & Acceptance          | COMPLETE                           | 全量门禁、完整迁移链、Bootstrap 恢复与 Product Design QA 全部通过                              |
 
 ## Phase 0 quality gate
 
@@ -95,17 +95,17 @@ Phase 5 Migrations：`202607160006_phase5_quality`、`202607160007_phase5_settle
 - server E2E：passed（账户、调整、付款、收款、资金流水、月度与业务维度查询）
 - web E2E：passed（数据优先财务工作台、上下文栏、URL 查询、付款入口与月度分析）
 
-Phase 6 Migrations：`202607160009_phase6_finance`、`202607160010_phase6_payable_credit`。
+Phase 6 Migrations：`202607160009_phase6_finance`、`202607160010_phase6_payable_credit`、`202607220002_daily_expense_bills`。
 
 ## Phase 7 quality gate
 
 - TypeScript、ESLint、Prettier、Nest build、Vite build、Prisma validate：passed
 - 完整迁移链：passed（临时空数据库从 Phase 0 顺序应用 11 个 Migration）
 - server unit：passed（6 suites / 9 tests）
-- server integration：passed（8 suites / 23 tests；含加密 MSAL 缓存、模拟存储、商品多图与文件查询）
-- server E2E：passed（8 suites / 24 tests；含文件上传、内容访问、主图排序及 OneDrive 状态）
+- server integration：passed（8 suites / 23 tests；含加密 MSAL 缓存、模拟存储、商品多图与文件查询；产品图片已由 ADR-043 恢复，通用文件中心继续移除）
+- server E2E：passed（8 suites / 24 tests；含文件上传、内容访问、主图排序及 OneDrive 状态；产品图片已由 ADR-043 恢复，通用文件中心继续移除）
 - web unit：passed
-- web E2E：passed（7 tests；含文件中心、商品图库和 OneDrive 设置向导）
+- web E2E：passed（7 tests；含文件中心、商品图库和 OneDrive 设置向导；产品图片已由 ADR-043 恢复，通用文件中心继续移除）
 - 真实 OneDrive：`WAITING_FOR_EXTERNAL_CONFIGURATION`；未提供 `MICROSOFT_CLIENT_ID` 时由完整模拟适配器验收
 
 Phase 7 Migration：`202607160011_phase7_files`。
@@ -122,6 +122,13 @@ Phase 7 Migration：`202607160011_phase7_files`。
 - 无数据库 Bootstrap：passed（临时数据库自动创建、custom dump 恢复、12 段迁移兼容检查、70 张表与健康检查）
 
 Phase 8 Migration：`202607160012_phase8_backup`。
+
+## 产品图片恢复（ADR-043）
+
+- 无数据库 Migration：复用既有 `ProductImage` 与 `FileAsset` 表；
+- 恢复产品编辑中的 JPG、PNG、WebP 上传、删除、缩略图和放大预览；单张上限 10 MB、每产品上限 12 张，服务器校验文件签名；
+- 验证：Prettier、TypeScript、ESLint、Prisma validate/format、全量 unit、integration、server E2E、web E2E、Nest/Vite build 均通过；浏览器已验证实际上传和缩放预览；
+- OneDrive：未配置时图片保存在 `MOCK_LOCAL` 本地回退，不能表示为真实 OneDrive 已连接。
 
 ## Final acceptance gate
 

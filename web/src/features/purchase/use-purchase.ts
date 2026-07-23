@@ -7,6 +7,7 @@ import {
   createPurchaseReturn,
   listPurchase,
   transitionPurchase,
+  updatePurchaseOrder,
   type PurchaseView,
 } from './api';
 
@@ -42,6 +43,11 @@ export function usePurchaseMutations() {
   return {
     price: useMutation({ mutationFn: createPurchasePrice, onSuccess: refresh }),
     order: useMutation({ mutationFn: createPurchaseOrder, onSuccess: refresh }),
+    orderUpdate: useMutation({
+      mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
+        updatePurchaseOrder(id, payload),
+      onSuccess: refresh,
+    }),
     receipt: useMutation({ mutationFn: createPurchaseReceipt, onSuccess: refresh }),
     returned: useMutation({ mutationFn: createPurchaseReturn, onSuccess: refresh }),
     transition: useMutation({

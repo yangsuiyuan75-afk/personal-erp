@@ -16,6 +16,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import {
+  ExpenseCategory,
   FinancialAccountType,
   FinancialDirection,
   FinancialTransactionCategory,
@@ -51,6 +52,10 @@ export class FinanceQueryDto extends ListQueryDto {
   @IsOptional()
   @IsEnum(FinancialTransactionCategory)
   category?: FinancialTransactionCategory;
+
+  @IsOptional()
+  @IsEnum(ExpenseCategory)
+  expenseCategory?: ExpenseCategory;
 
   @IsOptional()
   @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
@@ -223,4 +228,28 @@ export class CreateAccountAdjustmentDto {
   @IsOptional()
   @IsUUID()
   buyerId?: string;
+}
+
+export class CreateExpenseBillDto {
+  @IsUUID()
+  accountId!: string;
+
+  @IsEnum(ExpenseCategory)
+  expenseCategory!: ExpenseCategory;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  reason!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  payee!: string;
+
+  @IsNumberString()
+  amount!: string;
+
+  @IsISO8601({ strict: true })
+  occurredAt!: string;
 }

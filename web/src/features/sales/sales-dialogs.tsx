@@ -303,48 +303,39 @@ function OrderDialog({ open, onOpenChange }: DialogProps) {
 }
 
 const issueSchema = z.object({
-  salesOrderId: z.string().uuid('请选择销售订单'),
-  salesOrderItemId: z.string().uuid('请选择订单明细'),
   locationId: z.string().uuid('请选择出库地点'),
-  quantity: z.string().regex(quantity, '数量格式无效'),
-  occurredAt: z.string().min(1),
+  quantity: z.string().refine((value) => !value || quantity.test(value), '数量格式无效'),
+  occurredAt: z.string().optional(),
   remark: z.string().max(1000).optional(),
 });
 
-function IssueDialog({ open, onOpenChange }: DialogProps) {
+function IssueDialog({ issue, open, onOpenChange }: DialogProps & { issue: MasterRow }) {
   const references = useReferenceOptions();
-  const ordersQuery = useSalesOptions('orders');
-  const orders =
-    ordersQuery.data?.data.filter((row) =>
-      ['CONFIRMED', 'PARTIALLY_ISSUED'].includes(String(row.status)),
-    ) ?? [];
   const mutations = useSalesMutations();
   const notify = useToast();
+  const item = ((issue.items as MasterRow[] | undefined) ?? [])[0];
+  const defaultQuantity = String(item?.quantity ?? '');
+  const defaultDate = String(issue.occurredAt ?? '').slice(0, 10);
   const form = useForm<z.infer<typeof issueSchema>>({
     resolver: zodResolver(issueSchema),
     defaultValues: {
-      salesOrderId: '',
-      salesOrderItemId: '',
-      locationId: '',
+      locationId: String(issue.locationId ?? ''),
       quantity: '',
-      occurredAt: today(),
-      remark: '',
+      occurredAt: '',
+      remark: String(issue.remark ?? ''),
     },
   });
-  const order = orders.find((row) => row.id === form.watch('salesOrderId'));
-  const items = (order?.items as MasterRow[] | undefined) ?? [];
   const submit = async (values: z.infer<typeof issueSchema>) => {
     try {
-      const issue = await mutations.issue.mutateAsync({
-        salesOrderId: values.salesOrderId,
+      await mutations.issue.mutateAsync({
+        id: issue.id,
         locationId: values.locationId,
-        occurredAt: new Date(values.occurredAt).toISOString(),
-        remark: values.remark,
-        items: [{ salesOrderItemId: values.salesOrderItemId, quantity: values.quantity }],
+        quantity: values.quantity || undefined,
+        occurredAt: values.occurredAt ? new Date(values.occurredAt).toISOString() : undefined,
+        remark: values.remark || undefined,
       });
       await mutations.transition.mutateAsync({ kind: 'issues', id: issue.id, action: 'post' });
       notify('销售出库已过账并生成应收', 'success');
-      form.reset();
       onOpenChange(false);
     } catch (error) {
       notify(apiErrorMessage(error), 'error');
@@ -352,44 +343,27 @@ function IssueDialog({ open, onOpenChange }: DialogProps) {
   };
   return (
     <Shell
-      description="平台仓必须选择真实渠道仓；虚拟额度渠道会校验额度并扣减实际地点库存。"
+      description={`销售数量和销售日期留空时，分别使用订单数量 ${defaultQuantity} 与订单日期 ${defaultDate}。`}
       onOpenChange={onOpenChange}
       open={open}
       title="销售出库"
     >
       <form className="dialog-form" onSubmit={form.handleSubmit(submit)}>
         <div className="form-grid">
-          <Field error={form.formState.errors.salesOrderId?.message} label="销售订单">
-            <Select {...form.register('salesOrderId')}>
-              <option value="">请选择</option>
-              {orders.map((row) => (
-                <option key={row.id} value={row.id}>
-                  {String(row.orderNo)} · {row.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field error={form.formState.errors.salesOrderItemId?.message} label="订单明细">
-            <Select {...form.register('salesOrderItemId')}>
-              <option value="">请选择</option>
-              {items.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {String((item.sku as { code?: string })?.code)} · 未出{' '}
-                  {Number(item.quantity) - Number(item.issuedQuantity)}
-                </option>
-              ))}
-            </Select>
-          </Field>
           <Field error={form.formState.errors.locationId?.message} label="出库地点">
             <Select {...form.register('locationId')}>
               <option value="">请选择</option>
               <Options rows={references.locations} />
             </Select>
           </Field>
-          <Field error={form.formState.errors.quantity?.message} label="本次出库数量">
-            <Input inputMode="decimal" {...form.register('quantity')} />
+          <Field error={form.formState.errors.quantity?.message} label="本次销售数量（可留空）">
+            <Input
+              inputMode="decimal"
+              placeholder={`订单数量：${defaultQuantity}`}
+              {...form.register('quantity')}
+            />
           </Field>
-          <Field label="出库时间">
+          <Field label="销售日期（可留空）">
             <DatePickerInput
               onChange={(value) =>
                 form.setValue('occurredAt', value, { shouldDirty: true, shouldValidate: true })
@@ -523,29 +497,26 @@ interface DialogProps {
 
 export function SalesDialogs({
   active,
+  issue,
   onOpenChange,
 }: {
   active?: SalesDialogKind;
+  issue?: MasterRow;
   onOpenChange: (kind?: SalesDialogKind) => void;
 }) {
-  return (
-    <>
-      <PriceDialog
-        open={active === 'price'}
-        onOpenChange={(open) => onOpenChange(open ? 'price' : undefined)}
-      />
-      <OrderDialog
-        open={active === 'order'}
-        onOpenChange={(open) => onOpenChange(open ? 'order' : undefined)}
-      />
+  if (active === 'price')
+    return <PriceDialog onOpenChange={(open) => onOpenChange(open ? 'price' : undefined)} open />;
+  if (active === 'order')
+    return <OrderDialog onOpenChange={(open) => onOpenChange(open ? 'order' : undefined)} open />;
+  if (active === 'issue' && issue)
+    return (
       <IssueDialog
-        open={active === 'issue'}
+        issue={issue}
         onOpenChange={(open) => onOpenChange(open ? 'issue' : undefined)}
+        open
       />
-      <ReturnDialog
-        open={active === 'return'}
-        onOpenChange={(open) => onOpenChange(open ? 'return' : undefined)}
-      />
-    </>
-  );
+    );
+  if (active === 'return')
+    return <ReturnDialog onOpenChange={(open) => onOpenChange(open ? 'return' : undefined)} open />;
+  return null;
 }

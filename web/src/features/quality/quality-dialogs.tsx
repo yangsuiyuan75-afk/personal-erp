@@ -500,16 +500,19 @@ export function QualityDialogs({
   active?: QualityDialogKind;
   onOpenChange: (kind?: QualityDialogKind) => void;
 }) {
-  return (
-    <>
+  if (active === 'inspection')
+    return (
       <InspectionDialog
-        open={active === 'inspection'}
         onOpenChange={(open) => onOpenChange(open ? 'inspection' : undefined)}
+        open
       />
+    );
+  if (active === 'settlement')
+    return (
       <SettlementDialog
-        open={active === 'settlement'}
         onOpenChange={(open) => onOpenChange(open ? 'settlement' : undefined)}
+        open
       />
-    </>
-  );
+    );
+  return null;
 }

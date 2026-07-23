@@ -1,6 +1,7 @@
 import {
   ClaimResolutionType,
   DocumentStatus,
+  ExpenseCategory,
   FinancialDirection,
   FinancialTransactionCategory,
   PayableStatus,
@@ -48,13 +49,7 @@ describe('Phase 6 finance integration', () => {
       prisma.supplier.create({
         data: { code: 'FIN-SUP', name: '财务供应商', purchaseChannelId: purchaseChannel.id },
       }),
-      prisma.buyer.create({
-        data: {
-          code: 'FIN-BUY',
-          name: '财务采购员',
-          channels: { create: { purchaseChannelId: purchaseChannel.id } },
-        },
-      }),
+      prisma.buyer.create({ data: { code: 'FIN-BUY', name: '财务采购员' } }),
       prisma.customer.create({
         data: {
           code: 'FIN-CUS',
@@ -271,5 +266,56 @@ describe('Phase 6 finance integration', () => {
     expect(analytics.summary.outstandingReceivable.toString()).toBe('90');
     expect(analytics.dimensions.suppliers[0]).toMatchObject({ id: supplierId });
     expect(analytics.monthly).toHaveLength(1);
+  });
+
+  it('posts daily expense bills into cash flow and monthly operating results', async () => {
+    const bill = await finance.createExpenseBill(
+      {
+        accountId,
+        expenseCategory: ExpenseCategory.OFFICE_SUPPLIES,
+        reason: '采购打印纸与标签纸',
+        payee: '天河文具商城',
+        amount: '80',
+        occurredAt: '2026-07-22T00:00:00.000Z',
+      },
+      actor,
+    );
+    const draftList = await finance.listExpenseBills({
+      page: 1,
+      pageSize: 20,
+      sortBy: 'occurredAt',
+      sortOrder: SortOrder.DESC,
+      month: '2026-07',
+    });
+    expect(draftList.summary.pendingAmount.toString()).toBe('80');
+
+    await finance.postExpenseBill(bill.id, 'fin-expense-bill', actor);
+    const [expenses, transaction, analytics] = await Promise.all([
+      finance.listExpenseBills({
+        page: 1,
+        pageSize: 20,
+        sortBy: 'occurredAt',
+        sortOrder: SortOrder.DESC,
+        month: '2026-07',
+      }),
+      prisma.financialTransaction.findUniqueOrThrow({
+        where: { sourceType_sourceId: { sourceType: 'EXPENSE_BILL', sourceId: bill.id } },
+      }),
+      finance.analytics({
+        page: 1,
+        pageSize: 20,
+        sortBy: 'occurredAt',
+        sortOrder: SortOrder.DESC,
+        month: '2026-07',
+      }),
+    ]);
+    expect(expenses.summary).toMatchObject({ billCount: 1 });
+    expect(expenses.summary.postedAmount.toString()).toBe('80');
+    expect(expenses.summary.pendingAmount.toString()).toBe('0');
+    expect(transaction).toMatchObject({
+      direction: FinancialDirection.OUT,
+      category: FinancialTransactionCategory.OTHER_EXPENSE,
+    });
+    expect(analytics.summary.otherExpense.toString()).toBe('80');
   });
 });
