@@ -53,6 +53,6 @@ export const MASTER_RESOURCES = {
     sort: ['code', 'name', 'status', 'createdAt', 'updatedAt'],
     csv: ['code', 'name', 'phone', 'status'],
   },
-} as const;
+} as const
 
-export type MasterResource = keyof typeof MASTER_RESOURCES;
+export type MasterResource = keyof typeof MASTER_RESOURCES

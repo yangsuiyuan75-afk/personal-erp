@@ -1,7 +1,7 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { AuditService } from './audit.service';
-import { AuditQueryDto } from './dto/audit-query.dto';
+import { Controller, Get, Query } from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { AuditService } from './audit.service'
+import { AuditQueryDto } from './dto/audit-query.dto'
 
 @ApiTags('Audit')
 @ApiBearerAuth()
@@ -11,6 +11,6 @@ export class AuditController {
 
   @Get()
   list(@Query() query: AuditQueryDto) {
-    return this.auditService.list(query);
+    return this.auditService.list(query)
   }
 }

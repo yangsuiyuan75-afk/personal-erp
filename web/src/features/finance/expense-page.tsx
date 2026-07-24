@@ -1,13 +1,13 @@
-import { ArrowRight, CircleDollarSign, ReceiptText, Search, WalletCards } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { DataTable, type DataTableColumn } from '@/components/data-table/data-table';
-import { DatePickerInput, thisMonth } from '@/components/ui/date-picker';
-import { Input, Select } from '@/components/ui/field';
-import type { ListParams, MasterRow } from '@/features/master-data/api';
-import { apiErrorMessage } from '@/lib/api-error';
-import { formatDate } from '@/lib/date';
-import { enumLabel } from '@/lib/enum-label';
-import { useExpenseBills, useFinanceMutations, useFinanceOptions } from './use-finance';
+import { ArrowRight, CircleDollarSign, ReceiptText, Search, WalletCards } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
+import { DatePickerInput, thisMonth } from '@/components/ui/date-picker'
+import { Input, Select } from '@/components/ui/field'
+import type { ListParams, MasterRow } from '@/features/master-data/api'
+import { apiErrorMessage } from '@/lib/api-error'
+import { formatDate } from '@/lib/date'
+import { enumLabel } from '@/lib/enum-label'
+import { useExpenseBills, useFinanceMutations, useFinanceOptions } from './use-finance'
 
 const categoryText: Record<string, string> = {
   OFFICE_SUPPLIES: '办公耗材',
@@ -16,22 +16,22 @@ const categoryText: Record<string, string> = {
   UTILITIES: '通讯水电',
   TRAVEL: '差旅交通',
   OTHER: '其他开销',
-};
+}
 
 function money(value: unknown) {
   return `¥${Number(value ?? 0).toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  })}`
 }
 
 function status(row: MasterRow) {
-  const posted = row.status === 'POSTED';
+  const posted = row.status === 'POSTED'
   return (
     <span className={`business-status business-${posted ? 'posted' : 'draft'}`}>
       {posted ? '已过账' : '草稿'}
     </span>
-  );
+  )
 }
 
 const columns: DataTableColumn[] = [
@@ -48,7 +48,7 @@ const columns: DataTableColumn[] = [
   { key: 'account.name', label: '资金账户', sortable: false },
   { key: 'amount', label: '金额', render: (row) => <strong>{money(row.amount)}</strong> },
   { key: 'status', label: '状态', render: status, sortable: false },
-];
+]
 
 function ExpenseContext({ row }: { row?: MasterRow }) {
   if (!row)
@@ -58,8 +58,8 @@ function ExpenseContext({ row }: { row?: MasterRow }) {
         <strong>选择一张开销账单</strong>
         <p>右侧会展示账单摘要和财务汇总状态。</p>
       </aside>
-    );
-  const posted = row.status === 'POSTED';
+    )
+  const posted = row.status === 'POSTED'
   return (
     <aside className="inventory-context expense-context">
       <header>
@@ -104,7 +104,7 @@ function ExpenseContext({ row }: { row?: MasterRow }) {
         </p>
       </section>
     </aside>
-  );
+  )
 }
 
 export function ExpenseContent({
@@ -113,10 +113,10 @@ export function ExpenseContent({
   setKeyword,
   setParam,
 }: {
-  params: ListParams;
-  keyword: string;
-  setKeyword: (value: string) => void;
-  setParam: (key: string, value?: string, resetPage?: boolean) => void;
+  params: ListParams
+  keyword: string
+  setKeyword: (value: string) => void
+  setParam: (key: string, value?: string, resetPage?: boolean) => void
 }) {
   const normalizedParams = useMemo(
     () => ({
@@ -127,13 +127,13 @@ export function ExpenseContent({
         : 'occurredAt',
     }),
     [params],
-  );
-  const query = useExpenseBills(normalizedParams);
-  const accounts = useFinanceOptions('accounts');
-  const mutations = useFinanceMutations();
-  const [selected, setSelected] = useState<MasterRow>();
-  const rows = query.data?.data ?? [];
-  const summary = query.data?.summary;
+  )
+  const query = useExpenseBills(normalizedParams)
+  const accounts = useFinanceOptions('accounts')
+  const mutations = useFinanceMutations()
+  const [selected, setSelected] = useState<MasterRow>()
+  const rows = query.data?.data ?? []
+  const summary = query.data?.summary
   return (
     <>
       <div className="inventory-kpis expense-kpis">
@@ -226,13 +226,13 @@ export function ExpenseContent({
             onPageSizeChange={(size) => setParam('pageSize', String(size))}
             onRowClick={setSelected}
             onSort={(key) => {
-              setParam('sortBy', key);
+              setParam('sortBy', key)
               setParam(
                 'sortOrder',
                 normalizedParams.sortBy === key && normalizedParams.sortOrder === 'asc'
                   ? 'desc'
                   : 'asc',
-              );
+              )
             }}
             rows={rows}
             sortBy={normalizedParams.sortBy}
@@ -242,5 +242,5 @@ export function ExpenseContent({
         <ExpenseContext row={selected} />
       </div>
     </>
-  );
+  )
 }

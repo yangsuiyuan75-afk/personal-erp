@@ -1,6 +1,6 @@
-import { AlertDialog } from '@base-ui/react/alert-dialog';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AlertDialog } from '@base-ui/react/alert-dialog'
+import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export function DeactivateDialog({
   action,
@@ -10,14 +10,14 @@ export function DeactivateDialog({
   onOpenChange,
   onConfirm,
 }: {
-  action: 'activate' | 'deactivate';
-  name: string;
-  open: boolean;
-  pending: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => Promise<void>;
+  action: 'activate' | 'deactivate'
+  name: string
+  open: boolean
+  pending: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => Promise<void>
 }) {
-  const activating = action === 'activate';
+  const activating = action === 'activate'
 
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -52,5 +52,5 @@ export function DeactivateDialog({
         </AlertDialog.Viewport>
       </AlertDialog.Portal>
     </AlertDialog.Root>
-  );
+  )
 }

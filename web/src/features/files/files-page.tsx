@@ -1,10 +1,10 @@
-import { Check, Cloud, Copy, ExternalLink, HardDrive, KeyRound, ShieldCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useToast } from '@/components/feedback/toast-provider';
-import { Button } from '@/components/ui/button';
-import { apiErrorMessage } from '@/lib/api-error';
-import type { DeviceCode, OneDriveStatusCode } from './api';
-import { useOneDriveMutations, useOneDriveStatus } from './use-files';
+import { Check, Cloud, Copy, ExternalLink, HardDrive, KeyRound, ShieldCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useToast } from '@/components/feedback/toast-provider'
+import { Button } from '@/components/ui/button'
+import { apiErrorMessage } from '@/lib/api-error'
+import type { DeviceCode, OneDriveStatusCode } from './api'
+import { useOneDriveMutations, useOneDriveStatus } from './use-files'
 
 const statusDetails: Array<{ code: OneDriveStatusCode; label: string; description: string }> = [
   { code: 'CLIENT_ID_MISSING', label: '未配置 Client ID', description: '等待应用注册配置' },
@@ -14,58 +14,56 @@ const statusDetails: Array<{ code: OneDriveStatusCode; label: string; descriptio
   { code: 'REAUTH_REQUIRED', label: '需要重新授权', description: '缓存失效或已迁移设备' },
   { code: 'GRAPH_UNREACHABLE', label: 'Graph 不可达', description: '检查网络后重试' },
   { code: 'STORAGE_FULL', label: 'OneDrive 空间不足', description: '释放容量后继续备份' },
-];
+]
 
 function formatBytes(value: number | undefined): string {
-  const size = Number(value ?? 0);
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 ** 2) return `${(size / 1024).toFixed(1)} KB`;
-  if (size < 1024 ** 3) return `${(size / 1024 ** 2).toFixed(1)} MB`;
-  return `${(size / 1024 ** 3).toFixed(1)} GB`;
+  const size = Number(value ?? 0)
+  if (size < 1024) return `${size} B`
+  if (size < 1024 ** 2) return `${(size / 1024).toFixed(1)} KB`
+  if (size < 1024 ** 3) return `${(size / 1024 ** 2).toFixed(1)} MB`
+  return `${(size / 1024 ** 3).toFixed(1)} GB`
 }
 
 export function FilesPage() {
-  const notify = useToast();
-  const status = useOneDriveStatus();
-  const mutations = useOneDriveMutations();
-  const [deviceCode, setDeviceCode] = useState<DeviceCode>();
-  const [remaining, setRemaining] = useState(0);
-  const current = status.data;
-  const code = deviceCode ?? current?.deviceCode;
-  const quota = current?.drive?.quota;
+  const notify = useToast()
+  const status = useOneDriveStatus()
+  const mutations = useOneDriveMutations()
+  const [deviceCode, setDeviceCode] = useState<DeviceCode>()
+  const [remaining, setRemaining] = useState(0)
+  const current = status.data
+  const code = deviceCode ?? current?.deviceCode
+  const quota = current?.drive?.quota
   const quotaPercent = quota?.total
     ? Math.min(100, (Number(quota.used ?? 0) / quota.total) * 100)
-    : 0;
+    : 0
 
   useEffect(() => {
-    if (!code) return;
+    if (!code) return
     const update = () =>
-      setRemaining(
-        Math.max(0, Math.ceil((new Date(code.expiresAt).getTime() - Date.now()) / 1000)),
-      );
-    update();
-    const timer = window.setInterval(update, 1_000);
-    return () => window.clearInterval(timer);
-  }, [code]);
+      setRemaining(Math.max(0, Math.ceil((new Date(code.expiresAt).getTime() - Date.now()) / 1000)))
+    update()
+    const timer = window.setInterval(update, 1_000)
+    return () => window.clearInterval(timer)
+  }, [code])
 
   const connect = async () => {
     try {
-      setDeviceCode(await mutations.connect.mutateAsync());
-      notify('设备授权已启动，请在 Microsoft 页面输入验证码。', 'info');
+      setDeviceCode(await mutations.connect.mutateAsync())
+      notify('设备授权已启动，请在 Microsoft 页面输入验证码。', 'info')
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
 
   const disconnect = async () => {
     try {
-      await mutations.disconnect.mutateAsync();
-      setDeviceCode(undefined);
-      notify('OneDrive 连接已移除。', 'success');
+      await mutations.disconnect.mutateAsync()
+      setDeviceCode(undefined)
+      notify('OneDrive 连接已移除。', 'success')
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
 
   return (
     <section className="page-section files-page">
@@ -144,8 +142,8 @@ export function FilesPage() {
               <strong>{code.userCode}</strong>
               <button
                 onClick={() => {
-                  void navigator.clipboard.writeText(code.userCode);
-                  notify('验证码已复制。', 'success');
+                  void navigator.clipboard.writeText(code.userCode)
+                  notify('验证码已复制。', 'success')
                 }}
                 type="button"
               >
@@ -251,5 +249,5 @@ export function FilesPage() {
         </section>
       </div>
     </section>
-  );
+  )
 }

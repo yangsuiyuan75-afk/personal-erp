@@ -14,13 +14,13 @@ import {
   ShoppingCart,
   Store,
   Sun,
-} from 'lucide-react';
-import { useEffect, useRef } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useLogout } from '@/features/auth/use-auth';
-import { Select } from '@/components/ui/field';
-import { cn } from '@/lib/utils';
-import { useUiStore, type Theme } from '@/stores/ui-store';
+} from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useLogout } from '@/features/auth/use-auth'
+import { Select } from '@/components/ui/field'
+import { cn } from '@/lib/utils'
+import { useUiStore, type Theme } from '@/stores/ui-store'
 
 const groups = [
   { label: '工作台', items: [[Home, '工作台', '/workbench']] },
@@ -66,7 +66,7 @@ const groups = [
       [Settings, '审计日志', '/audit'],
     ],
   },
-] as const;
+] as const
 
 const pageTitles: Record<string, string> = {
   '/workbench': '工作台',
@@ -78,38 +78,38 @@ const pageTitles: Record<string, string> = {
   '/finance': '财务管理',
   '/files': 'OneDrive 设置',
   '/backups': '备份恢复',
-};
+}
 
 function applyTheme(theme: Theme): void {
   const dark =
-    theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-  document.documentElement.classList.toggle('dark', dark);
+    theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.classList.toggle('dark', dark)
 }
 
 export function AppLayout() {
-  const location = useLocation();
-  const logout = useLogout();
-  const accountMenu = useRef<HTMLDetailsElement>(null);
-  const { sidebarCollapsed, theme, setTheme, toggleSidebar } = useUiStore();
-  const pageTitle = pageTitles[location.pathname] ?? '基础资料';
+  const location = useLocation()
+  const logout = useLogout()
+  const accountMenu = useRef<HTMLDetailsElement>(null)
+  const { sidebarCollapsed, theme, setTheme, toggleSidebar } = useUiStore()
+  const pageTitle = pageTitles[location.pathname] ?? '基础资料'
 
   useEffect(() => {
-    applyTheme(theme);
-    if (theme !== 'system') return;
-    const media = matchMedia('(prefers-color-scheme: dark)');
-    const listener = () => applyTheme('system');
-    media.addEventListener('change', listener);
-    return () => media.removeEventListener('change', listener);
-  }, [theme]);
+    applyTheme(theme)
+    if (theme !== 'system') return
+    const media = matchMedia('(prefers-color-scheme: dark)')
+    const listener = () => applyTheme('system')
+    media.addEventListener('change', listener)
+    return () => media.removeEventListener('change', listener)
+  }, [theme])
 
   useEffect(() => {
     const closeAccountMenu = (event: PointerEvent) => {
       if (!accountMenu.current?.contains(event.target as Node))
-        accountMenu.current?.removeAttribute('open');
-    };
-    document.addEventListener('pointerdown', closeAccountMenu);
-    return () => document.removeEventListener('pointerdown', closeAccountMenu);
-  }, []);
+        accountMenu.current?.removeAttribute('open')
+    }
+    document.addEventListener('pointerdown', closeAccountMenu)
+    return () => document.removeEventListener('pointerdown', closeAccountMenu)
+  }, [])
 
   return (
     <div className={cn('erp-shell', sidebarCollapsed && 'sidebar-collapsed')}>
@@ -194,5 +194,5 @@ export function AppLayout() {
         </div>
       </main>
     </div>
-  );
+  )
 }

@@ -1,23 +1,23 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { paginationMeta } from '../../common/dto/list-query.dto';
-import { PrismaService } from '../../database/prisma.service';
-import type { AuditQueryDto } from './dto/audit-query.dto';
+import { Injectable } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
+import { paginationMeta } from '../../common/dto/list-query.dto'
+import { PrismaService } from '../../database/prisma.service'
+import type { AuditQueryDto } from './dto/audit-query.dto'
 
-const SENSITIVE_KEYS = /password|token|authorization|cookie|secret/i;
+const SENSITIVE_KEYS = /password|token|authorization|cookie|secret/i
 
 function sanitize(value: unknown): unknown {
-  if (value === undefined) return undefined;
+  if (value === undefined) return undefined
   if (
     value === null ||
     typeof value === 'string' ||
     typeof value === 'number' ||
     typeof value === 'boolean'
   ) {
-    return value;
+    return value
   }
   if (Array.isArray(value)) {
-    return value.map((item) => sanitize(item) ?? null);
+    return value.map((item) => sanitize(item) ?? null)
   }
   if (typeof value === 'object') {
     return Object.fromEntries(
@@ -25,16 +25,16 @@ function sanitize(value: unknown): unknown {
         key,
         SENSITIVE_KEYS.test(key) ? '[REDACTED]' : (sanitize(item) ?? null),
       ]),
-    );
+    )
   }
-  return String(value);
+  return String(value)
 }
 
 function auditJson(value: unknown): Prisma.InputJsonValue | Prisma.NullTypes.JsonNull | undefined {
-  const sanitized = sanitize(value);
-  if (sanitized === undefined) return undefined;
-  if (sanitized === null) return Prisma.JsonNull;
-  return sanitized as Prisma.InputJsonValue;
+  const sanitized = sanitize(value)
+  if (sanitized === undefined) return undefined
+  if (sanitized === null) return Prisma.JsonNull
+  return sanitized as Prisma.InputJsonValue
 }
 
 @Injectable()
@@ -42,15 +42,15 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async record(input: {
-    userId?: string;
-    module: string;
-    action: string;
-    entityType: string;
-    entityId?: string;
-    before?: unknown;
-    after?: unknown;
-    result?: string;
-    requestId?: string;
+    userId?: string
+    module: string
+    action: string
+    entityType: string
+    entityId?: string
+    before?: unknown
+    after?: unknown
+    result?: string
+    requestId?: string
   }): Promise<void> {
     await this.prisma.auditLog.create({
       data: {
@@ -59,7 +59,7 @@ export class AuditService {
         after: auditJson(input.after),
         result: input.result ?? 'SUCCESS',
       },
-    });
+    })
   }
 
   async list(query: AuditQueryDto) {
@@ -84,7 +84,7 @@ export class AuditService {
             },
           }
         : {}),
-    };
+    }
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.auditLog.findMany({
         where,
@@ -93,12 +93,12 @@ export class AuditService {
         take: query.pageSize,
       }),
       this.prisma.auditLog.count({ where }),
-    ]);
+    ])
     return {
       data: rows.map((row) => ({ ...row, id: row.id.toString() })),
       meta: paginationMeta(query.page, query.pageSize, total),
-    };
+    }
   }
 }
 
-export { sanitize as sanitizeAuditValue };
+export { sanitize as sanitizeAuditValue }

@@ -1,20 +1,20 @@
-import { Dialog } from '@base-ui/react/dialog';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { X } from 'lucide-react';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { DatePickerInput, today } from '@/components/ui/date-picker';
-import { Field, Input, Select, Textarea } from '@/components/ui/field';
-import { useToast } from '@/components/feedback/toast-provider';
-import type { MasterRow } from '@/features/master-data/api';
-import { useMasterOptions } from '@/features/master-data/use-master-data';
-import { useInventoryList } from '@/features/inventory/use-inventory';
-import { apiErrorMessage } from '@/lib/api-error';
-import { usePurchaseMutations, usePurchaseOptions } from './use-purchase';
+import { Dialog } from '@base-ui/react/dialog'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { X } from 'lucide-react'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
+import { DatePickerInput, today } from '@/components/ui/date-picker'
+import { Field, Input, Select, Textarea } from '@/components/ui/field'
+import { useToast } from '@/components/feedback/toast-provider'
+import type { MasterRow } from '@/features/master-data/api'
+import { useMasterOptions } from '@/features/master-data/use-master-data'
+import { useInventoryList } from '@/features/inventory/use-inventory'
+import { apiErrorMessage } from '@/lib/api-error'
+import { usePurchaseMutations, usePurchaseOptions } from './use-purchase'
 
-export type PurchaseDialogKind = 'price' | 'order' | 'receipt' | 'return';
+export type PurchaseDialogKind = 'price' | 'order' | 'receipt' | 'return'
 
 function Shell({
   open,
@@ -23,11 +23,11 @@ function Shell({
   description,
   children,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  children: React.ReactNode;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+  children: React.ReactNode
 }) {
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
@@ -49,7 +49,7 @@ function Shell({
         </Dialog.Viewport>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }
 
 function Actions({ pending, label }: { pending: boolean; label: string }) {
@@ -60,7 +60,7 @@ function Actions({ pending, label }: { pending: boolean; label: string }) {
         {pending ? '正在处理…' : label}
       </Button>
     </footer>
-  );
+  )
 }
 
 function Options({ rows }: { rows?: MasterRow[] }) {
@@ -68,28 +68,28 @@ function Options({ rows }: { rows?: MasterRow[] }) {
     <option key={row.id} value={row.id}>
       {row.code} · {row.name}
     </option>
-  ));
+  ))
 }
 
 function useReferenceOptions() {
-  const suppliers = useMasterOptions('suppliers');
-  const buyers = useMasterOptions('buyers');
-  const channels = useMasterOptions('purchase-channels');
-  const skus = useMasterOptions('skus');
+  const suppliers = useMasterOptions('suppliers')
+  const buyers = useMasterOptions('buyers')
+  const channels = useMasterOptions('purchase-channels')
+  const skus = useMasterOptions('skus')
   const locations = useInventoryList('locations', {
     page: 1,
     pageSize: 100,
     sortBy: 'code',
     sortOrder: 'asc',
     status: 'ACTIVE',
-  });
+  })
   return {
     suppliers: suppliers.data?.data,
     buyers: buyers.data?.data,
     channels: channels.data?.data,
     skus: skus.data?.data,
     locations: locations.data?.data,
-  };
+  }
 }
 
 const priceSchema = z.object({
@@ -101,12 +101,12 @@ const priceSchema = z.object({
   minQuantity: z.string().regex(/^\d+(\.\d{1,4})?$/, '起订量格式无效'),
   effectiveFrom: z.string().min(1, '请选择生效时间'),
   effectiveTo: z.string().optional(),
-});
+})
 
 function PriceDialog({ open, onOpenChange }: DialogProps) {
-  const options = useReferenceOptions();
-  const mutations = usePurchaseMutations();
-  const notify = useToast();
+  const options = useReferenceOptions()
+  const mutations = usePurchaseMutations()
+  const notify = useToast()
   const form = useForm<z.infer<typeof priceSchema>>({
     resolver: zodResolver(priceSchema),
     defaultValues: {
@@ -119,7 +119,7 @@ function PriceDialog({ open, onOpenChange }: DialogProps) {
       effectiveFrom: today(),
       effectiveTo: '',
     },
-  });
+  })
   const submit = async (values: z.infer<typeof priceSchema>) => {
     try {
       await mutations.price.mutateAsync({
@@ -128,14 +128,14 @@ function PriceDialog({ open, onOpenChange }: DialogProps) {
         currency: 'CNY',
         effectiveFrom: new Date(values.effectiveFrom).toISOString(),
         effectiveTo: values.effectiveTo ? new Date(values.effectiveTo).toISOString() : undefined,
-      });
-      notify('采购报价已保存', 'success');
-      form.reset();
-      onOpenChange(false);
+      })
+      notify('采购报价已保存', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="报价用于推荐；采购订单仍会保存独立成交价快照。"
@@ -195,7 +195,7 @@ function PriceDialog({ open, onOpenChange }: DialogProps) {
         <Actions label="保存报价" pending={mutations.price.isPending} />
       </form>
     </Shell>
-  );
+  )
 }
 
 const orderSchema = z.object({
@@ -208,12 +208,12 @@ const orderSchema = z.object({
   orderDate: z.string().min(1),
   expectedAt: z.string().optional(),
   remark: z.string().max(1000).optional(),
-});
+})
 
 function orderDefaults(order?: MasterRow): z.infer<typeof orderSchema> {
-  const item = Array.isArray(order?.items) ? (order.items[0] as MasterRow | undefined) : undefined;
+  const item = Array.isArray(order?.items) ? (order.items[0] as MasterRow | undefined) : undefined
   const relationId = (value: unknown) =>
-    value && typeof value === 'object' && 'id' in value ? String(value.id) : '';
+    value && typeof value === 'object' && 'id' in value ? String(value.id) : ''
   return {
     supplierId: relationId(order?.supplier),
     buyerId: relationId(order?.buyer),
@@ -224,20 +224,20 @@ function orderDefaults(order?: MasterRow): z.infer<typeof orderSchema> {
     orderDate: String(order?.orderDate ?? today()).slice(0, 10),
     expectedAt: order?.expectedAt ? String(order.expectedAt).slice(0, 10) : '',
     remark: String(order?.remark ?? ''),
-  };
+  }
 }
 
 function OrderDialog({ open, onOpenChange, order }: DialogProps & { order?: MasterRow }) {
-  const options = useReferenceOptions();
-  const mutations = usePurchaseMutations();
-  const notify = useToast();
+  const options = useReferenceOptions()
+  const mutations = usePurchaseMutations()
+  const notify = useToast()
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
     defaultValues: orderDefaults(),
-  });
+  })
   useEffect(() => {
-    if (open) form.reset(orderDefaults(order));
-  }, [form, open, order]);
+    if (open) form.reset(orderDefaults(order))
+  }, [form, open, order])
   const submit = async (values: z.infer<typeof orderSchema>) => {
     try {
       const payload = {
@@ -249,16 +249,16 @@ function OrderDialog({ open, onOpenChange, order }: DialogProps & { order?: Mast
         expectedAt: values.expectedAt ? new Date(values.expectedAt).toISOString() : undefined,
         remark: values.remark,
         items: [{ skuId: values.skuId, quantity: values.quantity, unitPrice: values.unitPrice }],
-      };
-      if (order) await mutations.orderUpdate.mutateAsync({ id: order.id, payload });
-      else await mutations.order.mutateAsync(payload);
-      notify(order ? '采购订单已更新' : '采购订单已创建', 'success');
-      form.reset();
-      onOpenChange(false);
+      }
+      if (order) await mutations.orderUpdate.mutateAsync({ id: order.id, payload })
+      else await mutations.order.mutateAsync(payload)
+      notify(order ? '采购订单已更新' : '采购订单已创建', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="确认前或尚未创建收货单时可修改；已有收货单后保留原成交快照。"
@@ -324,7 +324,7 @@ function OrderDialog({ open, onOpenChange, order }: DialogProps & { order?: Mast
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 const receiptSchema = z.object({
@@ -335,17 +335,17 @@ const receiptSchema = z.object({
   batchNo: z.string().trim().min(1, '请输入批次号'),
   occurredAt: z.string().min(1),
   remark: z.string().max(1000).optional(),
-});
+})
 
 function ReceiptDialog({ open, onOpenChange }: DialogProps) {
-  const references = useReferenceOptions();
-  const ordersQuery = usePurchaseOptions('orders');
+  const references = useReferenceOptions()
+  const ordersQuery = usePurchaseOptions('orders')
   const orders =
     ordersQuery.data?.data.filter((row) =>
       ['CONFIRMED', 'PARTIALLY_RECEIVED'].includes(String(row.status)),
-    ) ?? [];
-  const mutations = usePurchaseMutations();
-  const notify = useToast();
+    ) ?? []
+  const mutations = usePurchaseMutations()
+  const notify = useToast()
   const form = useForm<z.infer<typeof receiptSchema>>({
     resolver: zodResolver(receiptSchema),
     defaultValues: {
@@ -357,9 +357,9 @@ function ReceiptDialog({ open, onOpenChange }: DialogProps) {
       occurredAt: today(),
       remark: '',
     },
-  });
-  const order = orders.find((row) => row.id === form.watch('purchaseOrderId'));
-  const items = (order?.items as MasterRow[] | undefined) ?? [];
+  })
+  const order = orders.find((row) => row.id === form.watch('purchaseOrderId'))
+  const items = (order?.items as MasterRow[] | undefined) ?? []
   const submit = async (values: z.infer<typeof receiptSchema>) => {
     try {
       const receipt = await mutations.receipt.mutateAsync({
@@ -374,15 +374,15 @@ function ReceiptDialog({ open, onOpenChange }: DialogProps) {
             batchNo: values.batchNo,
           },
         ],
-      });
-      await mutations.transition.mutateAsync({ kind: 'receipts', id: receipt.id, action: 'post' });
-      notify('采购收货已过账并生成应付', 'success');
-      form.reset();
-      onOpenChange(false);
+      })
+      await mutations.transition.mutateAsync({ kind: 'receipts', id: receipt.id, action: 'post' })
+      notify('采购收货已过账并生成应付', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="支持分批收货；本次数量不能超过订单未收数量。"
@@ -443,7 +443,7 @@ function ReceiptDialog({ open, onOpenChange }: DialogProps) {
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 const returnSchema = z.object({
@@ -453,14 +453,14 @@ const returnSchema = z.object({
   quantity: z.string().regex(/^\d+(\.\d{1,4})?$/, '数量格式无效'),
   occurredAt: z.string().min(1),
   reason: z.string().trim().min(2, '请填写退货原因'),
-});
+})
 
 function ReturnDialog({ open, onOpenChange }: DialogProps) {
-  const references = useReferenceOptions();
-  const receiptsQuery = usePurchaseOptions('receipts');
-  const receipts = receiptsQuery.data?.data.filter((row) => String(row.status) === 'POSTED') ?? [];
-  const mutations = usePurchaseMutations();
-  const notify = useToast();
+  const references = useReferenceOptions()
+  const receiptsQuery = usePurchaseOptions('receipts')
+  const receipts = receiptsQuery.data?.data.filter((row) => String(row.status) === 'POSTED') ?? []
+  const mutations = usePurchaseMutations()
+  const notify = useToast()
   const form = useForm<z.infer<typeof returnSchema>>({
     resolver: zodResolver(returnSchema),
     defaultValues: {
@@ -471,9 +471,9 @@ function ReturnDialog({ open, onOpenChange }: DialogProps) {
       occurredAt: today(),
       reason: '',
     },
-  });
-  const receipt = receipts.find((row) => row.id === form.watch('purchaseReceiptId'));
-  const items = (receipt?.items as MasterRow[] | undefined) ?? [];
+  })
+  const receipt = receipts.find((row) => row.id === form.watch('purchaseReceiptId'))
+  const items = (receipt?.items as MasterRow[] | undefined) ?? []
   const submit = async (values: z.infer<typeof returnSchema>) => {
     try {
       const returned = await mutations.returned.mutateAsync({
@@ -482,15 +482,15 @@ function ReturnDialog({ open, onOpenChange }: DialogProps) {
         occurredAt: new Date(values.occurredAt).toISOString(),
         reason: values.reason,
         items: [{ purchaseReceiptItemId: values.purchaseReceiptItemId, quantity: values.quantity }],
-      });
-      await mutations.transition.mutateAsync({ kind: 'returns', id: returned.id, action: 'post' });
-      notify('采购退货已过账并调整应付', 'success');
-      form.reset();
-      onOpenChange(false);
+      })
+      await mutations.transition.mutateAsync({ kind: 'returns', id: returned.id, action: 'post' })
+      notify('采购退货已过账并调整应付', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="退货扣减原采购批次；已付款部分形成供应商退款应收。"
@@ -548,12 +548,12 @@ function ReturnDialog({ open, onOpenChange }: DialogProps) {
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 interface DialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export function PurchaseDialogs({
@@ -561,12 +561,12 @@ export function PurchaseDialogs({
   onOpenChange,
   order,
 }: {
-  active?: PurchaseDialogKind;
-  onOpenChange: (kind?: PurchaseDialogKind) => void;
-  order?: MasterRow;
+  active?: PurchaseDialogKind
+  onOpenChange: (kind?: PurchaseDialogKind) => void
+  order?: MasterRow
 }) {
   if (active === 'price')
-    return <PriceDialog onOpenChange={(open) => onOpenChange(open ? 'price' : undefined)} open />;
+    return <PriceDialog onOpenChange={(open) => onOpenChange(open ? 'price' : undefined)} open />
   if (active === 'order')
     return (
       <OrderDialog
@@ -574,12 +574,12 @@ export function PurchaseDialogs({
         open
         order={order}
       />
-    );
+    )
   if (active === 'receipt')
     return (
       <ReceiptDialog onOpenChange={(open) => onOpenChange(open ? 'receipt' : undefined)} open />
-    );
+    )
   if (active === 'return')
-    return <ReturnDialog onOpenChange={(open) => onOpenChange(open ? 'return' : undefined)} open />;
-  return null;
+    return <ReturnDialog onOpenChange={(open) => onOpenChange(open ? 'return' : undefined)} open />
+  return null
 }

@@ -1,39 +1,39 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 export interface FieldOption {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 export interface FormField {
-  name: string;
-  label: string;
-  type?: 'text' | 'textarea' | 'number' | 'select' | 'multiselect' | 'json' | 'attributes';
-  required?: boolean;
-  options?: FieldOption[];
-  optionResource?: string;
-  placeholder?: string;
+  name: string
+  label: string
+  type?: 'text' | 'textarea' | 'number' | 'select' | 'multiselect' | 'json' | 'attributes'
+  required?: boolean
+  options?: FieldOption[]
+  optionResource?: string
+  placeholder?: string
 }
 
 export interface ColumnDef {
-  key: string;
-  label: string;
+  key: string
+  label: string
 }
 
 export interface MasterConfig {
-  resource: string;
-  title: string;
-  description: string;
-  schema: z.ZodTypeAny;
-  fields: FormField[];
-  columns: ColumnDef[];
+  resource: string
+  title: string
+  description: string
+  schema: z.ZodTypeAny
+  fields: FormField[]
+  columns: ColumnDef[]
 }
 
-const code = z.string().trim().min(1, '请输入代码').max(64);
-const name = z.string().trim().min(1, '请输入名称').max(200);
-const optionalText = z.string().max(2000).optional();
-const common = { code, name };
-const statusColumn = { key: 'status', label: '状态' };
+const code = z.string().trim().min(1, '请输入代码').max(64)
+const name = z.string().trim().min(1, '请输入名称').max(200)
+const optionalText = z.string().max(2000).optional()
+const common = { code, name }
+const statusColumn = { key: 'status', label: '状态' }
 
 export const masterConfigs: Record<string, MasterConfig> = {
   categories: {
@@ -101,9 +101,9 @@ export const masterConfigs: Record<string, MasterConfig> = {
         .default('{}')
         .refine((value) => {
           try {
-            return typeof JSON.parse(value) === 'object';
+            return typeof JSON.parse(value) === 'object'
           } catch {
-            return false;
+            return false
           }
         }, '属性必须是合法 JSON'),
     }),
@@ -276,4 +276,4 @@ export const masterConfigs: Record<string, MasterConfig> = {
       statusColumn,
     ],
   },
-};
+}

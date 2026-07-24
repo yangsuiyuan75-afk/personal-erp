@@ -1,13 +1,13 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark' | 'system'
 
 interface UiState {
-  sidebarCollapsed: boolean;
-  theme: Theme;
-  toggleSidebar: () => void;
-  setTheme: (theme: Theme) => void;
+  sidebarCollapsed: boolean
+  theme: Theme
+  toggleSidebar: () => void
+  setTheme: (theme: Theme) => void
 }
 
 export const useUiStore = create<UiState>()(
@@ -20,4 +20,4 @@ export const useUiStore = create<UiState>()(
     }),
     { name: 'personal-erp-ui' },
   ),
-);
+)

@@ -8,18 +8,18 @@ import {
   Post,
   Query,
   Req,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { RequestWithId } from '../../common/middleware/request-id.middleware';
-import type { AuthUser } from '../auth/auth.types';
+} from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import type { RequestWithId } from '../../common/middleware/request-id.middleware'
+import type { AuthUser } from '../auth/auth.types'
 import {
   ConfirmQualityInspectionDto,
   CreateClaimSettlementDto,
   CreateQualityInspectionDto,
   QualityQueryDto,
-} from './dto/quality.dto';
-import { QualityService } from './quality.service';
+} from './dto/quality.dto'
+import { QualityService } from './quality.service'
 
 @ApiTags('Quality')
 @ApiBearerAuth()
@@ -29,12 +29,12 @@ export class QualityController {
 
   @Get('pending-returns')
   pendingReturns(@Query() query: QualityQueryDto) {
-    return this.quality.listPendingReturns(query);
+    return this.quality.listPendingReturns(query)
   }
 
   @Get('inspections')
   inspections(@Query() query: QualityQueryDto) {
-    return this.quality.listInspections(query);
+    return this.quality.listInspections(query)
   }
 
   @Post('inspections')
@@ -43,7 +43,7 @@ export class QualityController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.quality.createInspection(payload, actor, request.requestId);
+    return this.quality.createInspection(payload, actor, request.requestId)
   }
 
   @Post('inspections/:id/confirm')
@@ -54,17 +54,17 @@ export class QualityController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.quality.confirmInspection(id, payload, idempotencyKey, actor, request.requestId);
+    return this.quality.confirmInspection(id, payload, idempotencyKey, actor, request.requestId)
   }
 
   @Get('issues')
   issues(@Query() query: QualityQueryDto) {
-    return this.quality.listIssues(query);
+    return this.quality.listIssues(query)
   }
 
   @Get('claims')
   claims(@Query() query: QualityQueryDto) {
-    return this.quality.listClaims(query);
+    return this.quality.listClaims(query)
   }
 
   @Post('claims/:id/settlements')
@@ -75,26 +75,26 @@ export class QualityController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.quality.settleClaim(id, payload, idempotencyKey, actor, request.requestId);
+    return this.quality.settleClaim(id, payload, idempotencyKey, actor, request.requestId)
   }
 
   @Get('settlements')
   settlements(@Query() query: QualityQueryDto) {
-    return this.quality.listSettlements(query);
+    return this.quality.listSettlements(query)
   }
 
   @Get('stock')
   stock(@Query() query: QualityQueryDto) {
-    return this.quality.listQualityStock(query);
+    return this.quality.listQualityStock(query)
   }
 
   @Get('compensation-receivables')
   compensationReceivables(@Query() query: QualityQueryDto) {
-    return this.quality.listCompensationReceivables(query);
+    return this.quality.listCompensationReceivables(query)
   }
 
   @Get('analytics')
   analytics(@Query() query: QualityQueryDto) {
-    return this.quality.analytics(query);
+    return this.quality.analytics(query)
   }
 }

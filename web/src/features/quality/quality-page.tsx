@@ -9,20 +9,20 @@ import {
   Search,
   ShieldCheck,
   Undo2,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { DataTable, type DataTableColumn } from '@/components/data-table/data-table';
-import { Button } from '@/components/ui/button';
-import { DateRangePickerInput } from '@/components/ui/date-picker';
-import { Input, Select } from '@/components/ui/field';
-import type { ListParams, MasterRow } from '@/features/master-data/api';
-import { useListUrlState } from '@/features/master-data/use-list-url-state';
-import { apiErrorMessage } from '@/lib/api-error';
-import { formatDate } from '@/lib/date';
-import { enumLabel } from '@/lib/enum-label';
-import type { QualityAnalytics, QualityView } from './api';
-import { QualityDialogs, type QualityDialogKind } from './quality-dialogs';
-import { useQualityAnalytics, useQualityList } from './use-quality';
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
+import { Button } from '@/components/ui/button'
+import { DateRangePickerInput } from '@/components/ui/date-picker'
+import { Input, Select } from '@/components/ui/field'
+import type { ListParams, MasterRow } from '@/features/master-data/api'
+import { useListUrlState } from '@/features/master-data/use-list-url-state'
+import { apiErrorMessage } from '@/lib/api-error'
+import { formatDate } from '@/lib/date'
+import { enumLabel } from '@/lib/enum-label'
+import type { QualityAnalytics, QualityView } from './api'
+import { QualityDialogs, type QualityDialogKind } from './quality-dialogs'
+import { useQualityAnalytics, useQualityList } from './use-quality'
 
 const views: Array<{ id: QualityView; label: string; icon: typeof ShieldCheck }> = [
   { id: 'pending', label: '待质检退货', icon: Undo2 },
@@ -33,7 +33,7 @@ const views: Array<{ id: QualityView; label: string; icon: typeof ShieldCheck }>
   { id: 'stock', label: '质量库存', icon: PackageSearch },
   { id: 'compensation', label: '供应商赔付', icon: BadgeDollarSign },
   { id: 'analytics', label: '质量分析', icon: BarChart3 },
-];
+]
 
 const sortConfig: Record<
   Exclude<QualityView, 'analytics'>,
@@ -64,7 +64,7 @@ const sortConfig: Record<
     fallback: 'occurredAt',
     allowed: ['createdAt', 'occurredAt', 'outstandingAmount', 'originalAmount'],
   },
-};
+}
 
 const statusText: Record<string, string> = {
   PENDING: '待确认',
@@ -79,7 +79,7 @@ const statusText: Record<string, string> = {
   REJECTED: '已拒赔',
   POSTED: '已过账',
   PARTIALLY_RECEIVED: '部分收款',
-};
+}
 
 const responsibilityText: Record<string, string> = {
   UNKNOWN: '待确认',
@@ -87,7 +87,7 @@ const responsibilityText: Record<string, string> = {
   CUSTOMER: '客户',
   LOGISTICS: '物流',
   INTERNAL: '内部',
-};
+}
 
 const resolutionText: Record<string, string> = {
   REPLACEMENT: '供应商换货',
@@ -96,33 +96,33 @@ const resolutionText: Record<string, string> = {
   SCRAP: '索赔品报废',
   REJECTED: '供应商拒赔',
   SELF_BEAR: '自行承担',
-};
+}
 
 const stockText: Record<string, string> = {
   QC_PENDING: '待质检',
   DEFECTIVE: '不良品',
   SUPPLIER_CLAIM: '供应商索赔',
   SCRAPPED: '已报废',
-};
+}
 
 function money(value: unknown): string {
   return `¥${Number(value ?? 0).toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  })}`
 }
 
 function quantity(value: unknown): string {
-  return Number(value ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 4 });
+  return Number(value ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 4 })
 }
 
 function status(row: MasterRow) {
-  const value = String(row.status);
+  const value = String(row.status)
   return (
     <span className={`business-status business-${value.toLowerCase()}`}>
       {statusText[value] ?? enumLabel(value)}
     </span>
-  );
+  )
 }
 
 function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
@@ -140,7 +140,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
       },
       { key: 'totalRefund', label: '退货金额', render: (row) => money(row.totalRefund) },
       { key: 'occurredAt', label: '接收时间' },
-    ];
+    ]
   if (view === 'inspections')
     return [
       { key: 'inspectionNo', label: '质检单号' },
@@ -155,7 +155,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'inspectedAt', label: '质检时间' },
       { key: 'confirmedAt', label: '确认时间', sortable: false },
-    ];
+    ]
   if (view === 'issues')
     return [
       { key: 'issueNo', label: '问题编号' },
@@ -173,7 +173,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
       { key: 'estimatedLoss', label: '预计损失', render: (row) => money(row.estimatedLoss) },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'createdAt', label: '发现时间' },
-    ];
+    ]
   if (view === 'claims')
     return [
       { key: 'claimNo', label: '索赔单号', sortable: false },
@@ -196,7 +196,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
       },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'submittedAt', label: '提交时间' },
-    ];
+    ]
   if (view === 'settlements')
     return [
       { key: 'settlementNo', label: '处理单号', sortable: false },
@@ -213,7 +213,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
       { key: 'amount', label: '金额', render: (row) => money(row.amount) },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'occurredAt', label: '处理时间' },
-    ];
+    ]
   if (view === 'stock')
     return [
       { key: 'sku.code', label: 'SKU', sortable: false },
@@ -238,7 +238,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
       },
       { key: 'inventoryValue', label: '库存金额', render: (row) => money(row.inventoryValue) },
       { key: 'updatedAt', label: '更新时间' },
-    ];
+    ]
   return [
     { key: 'receivableNo', label: '赔付应收编号', sortable: false },
     { key: 'supplier.name', label: '供应商', sortable: false },
@@ -257,7 +257,7 @@ function columns(view: Exclude<QualityView, 'analytics'>): DataTableColumn[] {
     },
     { key: 'status', label: '状态', render: status, sortable: false },
     { key: 'occurredAt', label: '发生时间' },
-  ];
+  ]
 }
 
 function QualityFilters({
@@ -268,12 +268,12 @@ function QualityFilters({
   setParam,
   setDateRange,
 }: {
-  view: Exclude<QualityView, 'analytics'>;
-  params: ListParams;
-  keyword: string;
-  setKeyword: (value: string) => void;
-  setParam: (key: string, value?: string, resetPage?: boolean) => void;
-  setDateRange: (from?: string, to?: string) => void;
+  view: Exclude<QualityView, 'analytics'>
+  params: ListParams
+  keyword: string
+  setKeyword: (value: string) => void
+  setParam: (key: string, value?: string, resetPage?: boolean) => void
+  setDateRange: (from?: string, to?: string) => void
 }) {
   return (
     <div className="filter-bar inventory-filter-bar">
@@ -334,7 +334,7 @@ function QualityFilters({
         value={[params.createdFrom, params.createdTo]}
       />
     </div>
-  );
+  )
 }
 
 function ListContent({
@@ -346,13 +346,13 @@ function ListContent({
   setDateRange,
   onSettle,
 }: {
-  view: Exclude<QualityView, 'analytics'>;
-  params: ListParams;
-  keyword: string;
-  setKeyword: (value: string) => void;
-  setParam: (key: string, value?: string, resetPage?: boolean) => void;
-  setDateRange: (from?: string, to?: string) => void;
-  onSettle: () => void;
+  view: Exclude<QualityView, 'analytics'>
+  params: ListParams
+  keyword: string
+  setKeyword: (value: string) => void
+  setParam: (key: string, value?: string, resetPage?: boolean) => void
+  setDateRange: (from?: string, to?: string) => void
+  onSettle: () => void
 }) {
   const normalizedParams = useMemo(
     () => ({
@@ -362,14 +362,14 @@ function ListContent({
         : sortConfig[view].fallback,
     }),
     [params, view],
-  );
-  const list = useQualityList(view, normalizedParams);
-  const rows = list.data?.data ?? [];
-  const [selected, setSelected] = useState<MasterRow>();
+  )
+  const list = useQualityList(view, normalizedParams)
+  const rows = list.data?.data ?? []
+  const [selected, setSelected] = useState<MasterRow>()
   const pageQuantity = rows.reduce(
     (sum, row) => sum + Number(row.quantity ?? row.onHandQuantity ?? 0),
     0,
-  );
+  )
   const pageAmount = rows.reduce(
     (sum, row) =>
       sum +
@@ -382,7 +382,7 @@ function ListContent({
           0,
       ),
     0,
-  );
+  )
 
   return (
     <>
@@ -431,13 +431,13 @@ function ListContent({
             onPageSizeChange={(size) => setParam('pageSize', String(size))}
             onRowClick={setSelected}
             onSort={(key) => {
-              setParam('sortBy', key);
+              setParam('sortBy', key)
               setParam(
                 'sortOrder',
                 normalizedParams.sortBy === key && normalizedParams.sortOrder === 'asc'
                   ? 'desc'
                   : 'asc',
-              );
+              )
             }}
             rows={rows}
             sortBy={normalizedParams.sortBy}
@@ -447,15 +447,15 @@ function ListContent({
         <QualityContext row={selected} view={view} />
       </div>
     </>
-  );
+  )
 }
 
 function QualityContext({
   row,
   view,
 }: {
-  row?: MasterRow;
-  view: Exclude<QualityView, 'analytics'>;
+  row?: MasterRow
+  view: Exclude<QualityView, 'analytics'>
 }) {
   if (!row)
     return (
@@ -464,7 +464,7 @@ function QualityContext({
         <strong>选择一条质量记录</strong>
         <p>这里会集中显示状态、数量、金额与关联单据，方便在列表中完成判断。</p>
       </aside>
-    );
+    )
   const detail = [
     ['业务编号', row.code],
     [
@@ -481,7 +481,7 @@ function QualityContext({
         row.originalAmount,
     ],
     ['发生时间', row.occurredAt ?? row.inspectedAt ?? row.submittedAt ?? row.createdAt],
-  ].filter(([, value]) => value != null && value !== '');
+  ].filter(([, value]) => value != null && value !== '')
   return (
     <aside className="inventory-context quality-context">
       <header>
@@ -513,17 +513,16 @@ function QualityContext({
         <p>质量库存只通过单据与库存流水变化，不能直接编辑余额。</p>
       </section>
     </aside>
-  );
+  )
 }
 
 function AnalyticsContent({ params }: { params: ListParams }) {
-  const query = useQualityAnalytics(params, true);
-  const analytics = query.data;
-  if (query.isLoading)
-    return <div className="quality-analytics-state">正在汇总质量与索赔数据…</div>;
+  const query = useQualityAnalytics(params, true)
+  const analytics = query.data
+  if (query.isLoading) return <div className="quality-analytics-state">正在汇总质量与索赔数据…</div>
   if (query.error)
-    return <div className="quality-analytics-state error">{apiErrorMessage(query.error)}</div>;
-  if (!analytics) return null;
+    return <div className="quality-analytics-state error">{apiErrorMessage(query.error)}</div>
+  if (!analytics) return null
   return (
     <div className="quality-analytics">
       <AnalyticsSummary analytics={analytics} />
@@ -586,7 +585,7 @@ function AnalyticsContent({ params }: { params: ListParams }) {
         </section>
       </div>
     </div>
-  );
+  )
 }
 
 function AnalyticsSummary({ analytics }: { analytics: QualityAnalytics }) {
@@ -595,7 +594,7 @@ function AnalyticsSummary({ analytics }: { analytics: QualityAnalytics }) {
     ['预计损失', money(analytics.summary.estimatedLoss), '按批次成本计算'],
     ['索赔金额', money(analytics.summary.claimedAmount), '已向供应商提交'],
     ['已处理金额', money(analytics.summary.settledAmount), '换货、赔付与抵扣'],
-  ];
+  ]
   return (
     <div className="inventory-kpis quality-summary-kpis">
       {cards.map(([label, value, note]) => (
@@ -606,16 +605,16 @@ function AnalyticsSummary({ analytics }: { analytics: QualityAnalytics }) {
         </article>
       ))}
     </div>
-  );
+  )
 }
 
 export function QualityPage() {
-  const { params, keyword, setKeyword, setParam, setDateRange } = useListUrlState();
-  const rawView = new URLSearchParams(window.location.search).get('view');
+  const { params, keyword, setKeyword, setParam, setDateRange } = useListUrlState()
+  const rawView = new URLSearchParams(window.location.search).get('view')
   const view: QualityView = views.some((item) => item.id === rawView)
     ? (rawView as QualityView)
-    : 'pending';
-  const [dialog, setDialog] = useState<QualityDialogKind>();
+    : 'pending'
+  const [dialog, setDialog] = useState<QualityDialogKind>()
   return (
     <section className="page-section inventory-page quality-page">
       <header className="page-heading inventory-heading">
@@ -660,5 +659,5 @@ export function QualityPage() {
       )}
       <QualityDialogs active={dialog} onOpenChange={setDialog} />
     </section>
-  );
+  )
 }

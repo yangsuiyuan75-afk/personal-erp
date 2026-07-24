@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ListParams } from '@/features/master-data/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { ListParams } from '@/features/master-data/api'
 import {
   createAdjustment,
   createLocation,
@@ -11,7 +11,7 @@ import {
   listTransactions,
   postInventoryDocument,
   previewOpeningFile,
-} from './api';
+} from './api'
 
 export const inventoryKeys = {
   all: ['inventory'] as const,
@@ -19,7 +19,7 @@ export const inventoryKeys = {
   locations: (params: ListParams) => ['inventory', 'locations', params] as const,
   transactions: (params: ListParams) => ['inventory', 'transactions', params] as const,
   batches: (params: ListParams) => ['inventory', 'batches', params] as const,
-};
+}
 
 export function useInventoryList(
   view: 'balances' | 'locations' | 'transactions' | 'batches',
@@ -30,11 +30,11 @@ export function useInventoryList(
     locations: listLocations,
     transactions: listTransactions,
     batches: listBatches,
-  };
+  }
   return useQuery({
     queryKey: inventoryKeys[view](params),
     queryFn: () => functions[view](params),
-  });
+  })
 }
 
 export function useSkuInventory(skuId?: string) {
@@ -44,14 +44,14 @@ export function useSkuInventory(skuId?: string) {
     sortBy: 'updatedAt',
     sortOrder: 'desc',
     skuId,
-  };
+  }
   const batches: ListParams = {
     page: 1,
     pageSize: 20,
     sortBy: 'receivedAt',
     sortOrder: 'asc',
     skuId,
-  };
+  }
   return {
     balances: useQuery({
       queryKey: inventoryKeys.balances(params),
@@ -63,12 +63,12 @@ export function useSkuInventory(skuId?: string) {
       queryFn: () => listBatches(batches),
       enabled: Boolean(skuId),
     }),
-  };
+  }
 }
 
 export function useInventoryMutations() {
-  const client = useQueryClient();
-  const refresh = () => client.invalidateQueries({ queryKey: inventoryKeys.all });
+  const client = useQueryClient()
+  const refresh = () => client.invalidateQueries({ queryKey: inventoryKeys.all })
   return {
     createLocation: useMutation({ mutationFn: createLocation, onSuccess: refresh }),
     previewOpening: useMutation({ mutationFn: previewOpeningFile }),
@@ -80,5 +80,5 @@ export function useInventoryMutations() {
         postInventoryDocument(kind, id),
       onSuccess: refresh,
     }),
-  };
+  }
 }

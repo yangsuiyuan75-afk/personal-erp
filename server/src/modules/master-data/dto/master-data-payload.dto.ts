@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from 'class-transformer'
 import {
   IsDecimal,
   IsEnum,
@@ -10,95 +10,95 @@ import {
   Length,
   Max,
   Min,
-} from 'class-validator';
-import { ChannelInventoryMode, MasterDataStatus } from '@prisma/client';
+} from 'class-validator'
+import { ChannelInventoryMode, MasterDataStatus } from '@prisma/client'
 
 export class MasterDataPayloadDto {
   @IsOptional()
   @IsString()
   @Length(1, 64)
-  code?: string;
+  code?: string
 
   @IsOptional()
   @IsString()
   @Length(1, 200)
-  name?: string;
+  name?: string
 
   @IsOptional()
   @IsEnum(MasterDataStatus)
-  status?: MasterDataStatus;
+  status?: MasterDataStatus
 
   @IsOptional()
   @IsUUID()
-  categoryId?: string;
+  categoryId?: string
 
   @IsOptional()
   @IsString()
   @Length(0, 100)
-  brand?: string;
+  brand?: string
 
   @IsOptional()
   @IsString()
   @Length(0, 2000)
-  description?: string;
+  description?: string
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(4)
-  decimalScale?: number;
+  decimalScale?: number
 
   @IsOptional()
   @IsString()
   @Length(1, 128)
-  barcode?: string;
+  barcode?: string
 
   @IsOptional()
   @IsUUID()
-  productId?: string;
+  productId?: string
 
   @IsOptional()
   @IsUUID()
-  baseUnitId?: string;
+  baseUnitId?: string
 
   @IsOptional()
   @IsObject()
-  attributes?: Record<string, string>;
+  attributes?: Record<string, string>
 
   @IsOptional()
   @IsDecimal({ decimal_digits: '0,4', force_decimal: false })
-  weight?: string;
+  weight?: string
 
   @IsOptional()
   @IsString()
   @Length(1, 100)
-  type?: string;
+  type?: string
 
   @IsOptional()
   @IsString()
   @Length(0, 100)
-  contactName?: string;
+  contactName?: string
 
   @IsOptional()
   @IsString()
   @Length(0, 50)
-  phone?: string;
+  phone?: string
 
   @IsOptional()
   @IsString()
   @Length(0, 100)
-  taxNo?: string;
+  taxNo?: string
 
   @IsOptional()
   @IsUUID()
-  purchaseChannelId?: string;
+  purchaseChannelId?: string
 
   @IsOptional()
   @IsEnum(ChannelInventoryMode)
-  inventoryMode?: ChannelInventoryMode;
+  inventoryMode?: ChannelInventoryMode
 
   @IsOptional()
   @IsUUID()
-  defaultSalesChannelId?: string;
+  defaultSalesChannelId?: string
 }

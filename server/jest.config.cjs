@@ -7,4 +7,4 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts', '!src/main.ts'],
   coverageDirectory: 'coverage/unit',
   testEnvironment: 'node',
-};
+}

@@ -13,23 +13,23 @@ import {
   StreamableFile,
   UploadedFile,
   UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Public } from '../../common/decorators/public.decorator';
-import type { RequestWithId } from '../../common/middleware/request-id.middleware';
-import type { AuthUser } from '../auth/auth.types';
-import { BackupService } from './backup.service';
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger'
+import type { Response } from 'express'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import { Public } from '../../common/decorators/public.decorator'
+import type { RequestWithId } from '../../common/middleware/request-id.middleware'
+import type { AuthUser } from '../auth/auth.types'
+import { BackupService } from './backup.service'
 import {
   BackupListQueryDto,
   BootstrapRestoreDto,
   CreateBackupDto,
   LockBackupDto,
   RestoreBackupDto,
-} from './dto/backup.dto';
-import { AllowDuringMaintenance } from './maintenance.guard';
+} from './dto/backup.dto'
+import { AllowDuringMaintenance } from './maintenance.guard'
 
 @ApiTags('Backups')
 @ApiBearerAuth()
@@ -41,19 +41,19 @@ export class BackupController {
   @Get('status')
   @ApiOperation({ summary: '查看备份建议、启动补偿与维护模式状态' })
   status() {
-    return this.backups.systemStatus();
+    return this.backups.systemStatus()
   }
 
   @Get('export')
   export(@Query() query: BackupListQueryDto, @Res({ passthrough: true }) response: Response) {
-    response.setHeader('content-type', 'text/csv; charset=utf-8');
-    response.setHeader('content-disposition', "attachment; filename*=UTF-8''backup-history.csv");
-    return new StreamableFile(this.backups.exportCsv(query));
+    response.setHeader('content-type', 'text/csv; charset=utf-8')
+    response.setHeader('content-disposition', "attachment; filename*=UTF-8''backup-history.csv")
+    return new StreamableFile(this.backups.exportCsv(query))
   }
 
   @Get()
   list(@Query() query: BackupListQueryDto) {
-    return this.backups.list(query);
+    return this.backups.list(query)
   }
 
   @Post()
@@ -63,7 +63,7 @@ export class BackupController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.backups.createManual(actor, payload.locked, request.requestId);
+    return this.backups.createManual(actor, payload.locked, request.requestId)
   }
 
   @Get(':id/download')
@@ -71,13 +71,13 @@ export class BackupController {
     @Param('id', ParseUUIDPipe) id: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const file = await this.backups.download(id);
-    response.setHeader('content-type', file.mimeType);
+    const file = await this.backups.download(id)
+    response.setHeader('content-type', file.mimeType)
     response.setHeader(
       'content-disposition',
       `attachment; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
-    );
-    return new StreamableFile(file.content);
+    )
+    return new StreamableFile(file.content)
   }
 
   @Post(':id/verify')
@@ -86,7 +86,7 @@ export class BackupController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.backups.verify(id, actor, request.requestId);
+    return this.backups.verify(id, actor, request.requestId)
   }
 
   @Patch(':id/lock')
@@ -96,7 +96,7 @@ export class BackupController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.backups.lock(id, payload.locked, actor, request.requestId);
+    return this.backups.lock(id, payload.locked, actor, request.requestId)
   }
 
   @Post(':id/restore')
@@ -107,7 +107,7 @@ export class BackupController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.backups.restore(id, payload, actor, request.requestId);
+    return this.backups.restore(id, payload, actor, request.requestId)
   }
 }
 
@@ -121,7 +121,7 @@ export class BootstrapRecoveryController {
   @Get('status')
   @ApiOperation({ summary: '数据库无 Schema 或无管理员时检查 Bootstrap 恢复状态' })
   status() {
-    return this.backups.bootstrapStatus();
+    return this.backups.bootstrapStatus()
   }
 
   @Post('restore')
@@ -133,6 +133,6 @@ export class BootstrapRecoveryController {
     @Body() payload: BootstrapRestoreDto,
     @Headers('x-recovery-key') recoveryKey?: string,
   ) {
-    return this.backups.bootstrapRestore(file, payload, recoveryKey);
+    return this.backups.bootstrapRestore(file, payload, recoveryKey)
   }
 }

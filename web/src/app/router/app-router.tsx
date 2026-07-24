@@ -1,15 +1,15 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
-import { AppLayout } from '@/app/layout/app-layout';
-import { AuditPage } from '@/features/audit/audit-page';
-import { MasterDataPage } from '@/features/master-data/master-data-page';
-import { WorkbenchPage } from '@/features/workbench/workbench-page';
-import { InventoryPage } from '@/features/inventory/inventory-page';
-import { FinancePage } from '@/features/finance/finance-page';
-import { FilesPage } from '@/features/files/files-page';
-import { BackupPage } from '@/features/backup/backup-page';
-import { PurchasePage } from '@/features/purchase/purchase-page';
-import { QualityPage } from '@/features/quality/quality-page';
-import { SalesPage } from '@/features/sales/sales-page';
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AppLayout } from '@/app/layout/app-layout'
+import { AuditPage } from '@/features/audit/audit-page'
+import { MasterDataPage } from '@/features/master-data/master-data-page'
+import { WorkbenchPage } from '@/features/workbench/workbench-page'
+import { InventoryPage } from '@/features/inventory/inventory-page'
+import { FinancePage } from '@/features/finance/finance-page'
+import { FilesPage } from '@/features/files/files-page'
+import { BackupPage } from '@/features/backup/backup-page'
+import { PurchasePage } from '@/features/purchase/purchase-page'
+import { QualityPage } from '@/features/quality/quality-page'
+import { SalesPage } from '@/features/sales/sales-page'
 
 export function AppRouter() {
   return (
@@ -29,5 +29,5 @@ export function AppRouter() {
         <Route element={<Navigate replace to="/workbench" />} path="*" />
       </Route>
     </Routes>
-  );
+  )
 }

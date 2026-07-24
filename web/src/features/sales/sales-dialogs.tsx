@@ -1,19 +1,19 @@
-import { Dialog } from '@base-ui/react/dialog';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { useToast } from '@/components/feedback/toast-provider';
-import { Button } from '@/components/ui/button';
-import { DatePickerInput, today } from '@/components/ui/date-picker';
-import { Field, Input, Select, Textarea } from '@/components/ui/field';
-import { useInventoryList } from '@/features/inventory/use-inventory';
-import type { MasterRow } from '@/features/master-data/api';
-import { useMasterOptions } from '@/features/master-data/use-master-data';
-import { apiErrorMessage } from '@/lib/api-error';
-import { useSalesMutations, useSalesOptions } from './use-sales';
+import { Dialog } from '@base-ui/react/dialog'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { X } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { useToast } from '@/components/feedback/toast-provider'
+import { Button } from '@/components/ui/button'
+import { DatePickerInput, today } from '@/components/ui/date-picker'
+import { Field, Input, Select, Textarea } from '@/components/ui/field'
+import { useInventoryList } from '@/features/inventory/use-inventory'
+import type { MasterRow } from '@/features/master-data/api'
+import { useMasterOptions } from '@/features/master-data/use-master-data'
+import { apiErrorMessage } from '@/lib/api-error'
+import { useSalesMutations, useSalesOptions } from './use-sales'
 
-export type SalesDialogKind = 'price' | 'order' | 'issue' | 'return';
+export type SalesDialogKind = 'price' | 'order' | 'issue' | 'return'
 
 function Shell({
   open,
@@ -22,11 +22,11 @@ function Shell({
   description,
   children,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  children: React.ReactNode;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+  children: React.ReactNode
 }) {
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
@@ -48,7 +48,7 @@ function Shell({
         </Dialog.Viewport>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }
 
 function Actions({ pending, label }: { pending: boolean; label: string }) {
@@ -59,7 +59,7 @@ function Actions({ pending, label }: { pending: boolean; label: string }) {
         {pending ? '正在处理…' : label}
       </Button>
     </footer>
-  );
+  )
 }
 
 function Options({ rows }: { rows?: MasterRow[] }) {
@@ -67,30 +67,30 @@ function Options({ rows }: { rows?: MasterRow[] }) {
     <option key={row.id} value={row.id}>
       {row.code} · {row.name}
     </option>
-  ));
+  ))
 }
 
 function useReferenceOptions() {
-  const channels = useMasterOptions('sales-channels');
-  const customers = useMasterOptions('customers');
-  const skus = useMasterOptions('skus');
+  const channels = useMasterOptions('sales-channels')
+  const customers = useMasterOptions('customers')
+  const skus = useMasterOptions('skus')
   const locations = useInventoryList('locations', {
     page: 1,
     pageSize: 100,
     sortBy: 'code',
     sortOrder: 'asc',
     status: 'ACTIVE',
-  });
+  })
   return {
     channels: channels.data?.data,
     customers: customers.data?.data,
     skus: skus.data?.data,
     locations: locations.data?.data,
-  };
+  }
 }
 
-const decimal = /^\d+(\.\d{1,6})?$/;
-const quantity = /^\d+(\.\d{1,4})?$/;
+const decimal = /^\d+(\.\d{1,6})?$/
+const quantity = /^\d+(\.\d{1,4})?$/
 
 const priceSchema = z.object({
   skuId: z.string().uuid('请选择 SKU'),
@@ -100,12 +100,12 @@ const priceSchema = z.object({
   minQuantity: z.string().regex(quantity, '起售量格式无效'),
   effectiveFrom: z.string().min(1, '请选择生效时间'),
   effectiveTo: z.string().optional(),
-});
+})
 
 function PriceDialog({ open, onOpenChange }: DialogProps) {
-  const options = useReferenceOptions();
-  const mutations = useSalesMutations();
-  const notify = useToast();
+  const options = useReferenceOptions()
+  const mutations = useSalesMutations()
+  const notify = useToast()
   const form = useForm<z.infer<typeof priceSchema>>({
     resolver: zodResolver(priceSchema),
     defaultValues: {
@@ -117,7 +117,7 @@ function PriceDialog({ open, onOpenChange }: DialogProps) {
       effectiveFrom: today(),
       effectiveTo: '',
     },
-  });
+  })
   const submit = async (values: z.infer<typeof priceSchema>) => {
     try {
       await mutations.price.mutateAsync({
@@ -127,14 +127,14 @@ function PriceDialog({ open, onOpenChange }: DialogProps) {
         currency: 'CNY',
         effectiveFrom: new Date(values.effectiveFrom).toISOString(),
         effectiveTo: values.effectiveTo ? new Date(values.effectiveTo).toISOString() : undefined,
-      });
-      notify('销售价格已保存', 'success');
-      form.reset();
-      onOpenChange(false);
+      })
+      notify('销售价格已保存', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="客户价优先于渠道价和默认价；销售订单会保存独立成交快照。"
@@ -188,7 +188,7 @@ function PriceDialog({ open, onOpenChange }: DialogProps) {
         <Actions label="保存售价" pending={mutations.price.isPending} />
       </form>
     </Shell>
-  );
+  )
 }
 
 const orderSchema = z.object({
@@ -202,12 +202,12 @@ const orderSchema = z.object({
     .optional(),
   orderDate: z.string().min(1),
   remark: z.string().max(1000).optional(),
-});
+})
 
 function OrderDialog({ open, onOpenChange }: DialogProps) {
-  const options = useReferenceOptions();
-  const mutations = useSalesMutations();
-  const notify = useToast();
+  const options = useReferenceOptions()
+  const mutations = useSalesMutations()
+  const notify = useToast()
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
@@ -219,7 +219,7 @@ function OrderDialog({ open, onOpenChange }: DialogProps) {
       orderDate: today(),
       remark: '',
     },
-  });
+  })
   const submit = async (values: z.infer<typeof orderSchema>) => {
     try {
       const order = await mutations.order.mutateAsync({
@@ -235,15 +235,15 @@ function OrderDialog({ open, onOpenChange }: DialogProps) {
             unitPrice: values.unitPrice || undefined,
           },
         ],
-      });
-      await mutations.transition.mutateAsync({ kind: 'orders', id: order.id, action: 'confirm' });
-      notify('销售订单已创建并确认', 'success');
-      form.reset();
-      onOpenChange(false);
+      })
+      await mutations.transition.mutateAsync({ kind: 'orders', id: order.id, action: 'confirm' })
+      notify('销售订单已创建并确认', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="留空单价时按客户价、渠道价、默认价自动解析；最终成交价写入订单快照。"
@@ -299,7 +299,7 @@ function OrderDialog({ open, onOpenChange }: DialogProps) {
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 const issueSchema = z.object({
@@ -307,15 +307,15 @@ const issueSchema = z.object({
   quantity: z.string().refine((value) => !value || quantity.test(value), '数量格式无效'),
   occurredAt: z.string().optional(),
   remark: z.string().max(1000).optional(),
-});
+})
 
 function IssueDialog({ issue, open, onOpenChange }: DialogProps & { issue: MasterRow }) {
-  const references = useReferenceOptions();
-  const mutations = useSalesMutations();
-  const notify = useToast();
-  const item = ((issue.items as MasterRow[] | undefined) ?? [])[0];
-  const defaultQuantity = String(item?.quantity ?? '');
-  const defaultDate = String(issue.occurredAt ?? '').slice(0, 10);
+  const references = useReferenceOptions()
+  const mutations = useSalesMutations()
+  const notify = useToast()
+  const item = ((issue.items as MasterRow[] | undefined) ?? [])[0]
+  const defaultQuantity = String(item?.quantity ?? '')
+  const defaultDate = String(issue.occurredAt ?? '').slice(0, 10)
   const form = useForm<z.infer<typeof issueSchema>>({
     resolver: zodResolver(issueSchema),
     defaultValues: {
@@ -324,7 +324,7 @@ function IssueDialog({ issue, open, onOpenChange }: DialogProps & { issue: Maste
       occurredAt: '',
       remark: String(issue.remark ?? ''),
     },
-  });
+  })
   const submit = async (values: z.infer<typeof issueSchema>) => {
     try {
       await mutations.issue.mutateAsync({
@@ -333,14 +333,14 @@ function IssueDialog({ issue, open, onOpenChange }: DialogProps & { issue: Maste
         quantity: values.quantity || undefined,
         occurredAt: values.occurredAt ? new Date(values.occurredAt).toISOString() : undefined,
         remark: values.remark || undefined,
-      });
-      await mutations.transition.mutateAsync({ kind: 'issues', id: issue.id, action: 'post' });
-      notify('销售出库已过账并生成应收', 'success');
-      onOpenChange(false);
+      })
+      await mutations.transition.mutateAsync({ kind: 'issues', id: issue.id, action: 'post' })
+      notify('销售出库已过账并生成应收', 'success')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description={`销售数量和销售日期留空时，分别使用订单数量 ${defaultQuantity} 与订单日期 ${defaultDate}。`}
@@ -381,7 +381,7 @@ function IssueDialog({ issue, open, onOpenChange }: DialogProps & { issue: Maste
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 const returnSchema = z.object({
@@ -391,15 +391,15 @@ const returnSchema = z.object({
   quantity: z.string().regex(quantity, '数量格式无效'),
   occurredAt: z.string().min(1),
   reason: z.string().trim().min(2, '请填写退货原因'),
-});
+})
 
 function ReturnDialog({ open, onOpenChange }: DialogProps) {
-  const references = useReferenceOptions();
-  const issuesQuery = useSalesOptions('issues');
-  const issues = issuesQuery.data?.data.filter((row) => String(row.status) === 'POSTED') ?? [];
-  const qcLocations = references.locations?.filter((row) => row.type === 'QC_AREA');
-  const mutations = useSalesMutations();
-  const notify = useToast();
+  const references = useReferenceOptions()
+  const issuesQuery = useSalesOptions('issues')
+  const issues = issuesQuery.data?.data.filter((row) => String(row.status) === 'POSTED') ?? []
+  const qcLocations = references.locations?.filter((row) => row.type === 'QC_AREA')
+  const mutations = useSalesMutations()
+  const notify = useToast()
   const form = useForm<z.infer<typeof returnSchema>>({
     resolver: zodResolver(returnSchema),
     defaultValues: {
@@ -410,9 +410,9 @@ function ReturnDialog({ open, onOpenChange }: DialogProps) {
       occurredAt: today(),
       reason: '',
     },
-  });
-  const issue = issues.find((row) => row.id === form.watch('salesIssueId'));
-  const items = (issue?.items as MasterRow[] | undefined) ?? [];
+  })
+  const issue = issues.find((row) => row.id === form.watch('salesIssueId'))
+  const items = (issue?.items as MasterRow[] | undefined) ?? []
   const submit = async (values: z.infer<typeof returnSchema>) => {
     try {
       const returned = await mutations.returned.mutateAsync({
@@ -421,15 +421,15 @@ function ReturnDialog({ open, onOpenChange }: DialogProps) {
         occurredAt: new Date(values.occurredAt).toISOString(),
         reason: values.reason,
         items: [{ salesIssueItemId: values.salesIssueItemId, quantity: values.quantity }],
-      });
-      await mutations.transition.mutateAsync({ kind: 'returns', id: returned.id, action: 'post' });
-      notify('销售退货已进入待质检并调整应收', 'success');
-      form.reset();
-      onOpenChange(false);
+      })
+      await mutations.transition.mutateAsync({ kind: 'returns', id: returned.id, action: 'post' })
+      notify('销售退货已进入待质检并调整应收', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="退货只进入 QC_PENDING，不会直接增加可售库存；批次来源会继续保留。"
@@ -487,12 +487,12 @@ function ReturnDialog({ open, onOpenChange }: DialogProps) {
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 interface DialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export function SalesDialogs({
@@ -500,14 +500,14 @@ export function SalesDialogs({
   issue,
   onOpenChange,
 }: {
-  active?: SalesDialogKind;
-  issue?: MasterRow;
-  onOpenChange: (kind?: SalesDialogKind) => void;
+  active?: SalesDialogKind
+  issue?: MasterRow
+  onOpenChange: (kind?: SalesDialogKind) => void
 }) {
   if (active === 'price')
-    return <PriceDialog onOpenChange={(open) => onOpenChange(open ? 'price' : undefined)} open />;
+    return <PriceDialog onOpenChange={(open) => onOpenChange(open ? 'price' : undefined)} open />
   if (active === 'order')
-    return <OrderDialog onOpenChange={(open) => onOpenChange(open ? 'order' : undefined)} open />;
+    return <OrderDialog onOpenChange={(open) => onOpenChange(open ? 'order' : undefined)} open />
   if (active === 'issue' && issue)
     return (
       <IssueDialog
@@ -515,8 +515,8 @@ export function SalesDialogs({
         onOpenChange={(open) => onOpenChange(open ? 'issue' : undefined)}
         open
       />
-    );
+    )
   if (active === 'return')
-    return <ReturnDialog onOpenChange={(open) => onOpenChange(open ? 'return' : undefined)} open />;
-  return null;
+    return <ReturnDialog onOpenChange={(open) => onOpenChange(open ? 'return' : undefined)} open />
+  return null
 }

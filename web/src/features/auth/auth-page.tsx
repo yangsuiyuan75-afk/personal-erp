@@ -1,40 +1,40 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Boxes, DatabaseBackup, LockKeyhole, ShieldCheck, Upload } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Field, Input } from '@/components/ui/field';
-import { bootstrapRestore, getBootstrapRecoveryStatus } from '@/features/backup/api';
-import { apiErrorMessage } from '@/lib/api-error';
-import { useBootstrapAdmin, useLogin } from './use-auth';
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { Boxes, DatabaseBackup, LockKeyhole, ShieldCheck, Upload } from 'lucide-react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
+import { Field, Input } from '@/components/ui/field'
+import { bootstrapRestore, getBootstrapRecoveryStatus } from '@/features/backup/api'
+import { apiErrorMessage } from '@/lib/api-error'
+import { useBootstrapAdmin, useLogin } from './use-auth'
 
 const schema = z.object({
   username: z.string().min(3, '用户名至少 3 个字符').max(64),
   password: z.string().min(12, '密码至少 12 个字符'),
-});
+})
 
-type FormData = z.infer<typeof schema>;
+type FormData = z.infer<typeof schema>
 
 export function AuthPage({ mode }: { mode: 'bootstrap' | 'login' }) {
-  const bootstrap = useBootstrapAdmin();
-  const login = useLogin();
-  const mutation = mode === 'bootstrap' ? bootstrap : login;
-  const [restoreOpen, setRestoreOpen] = useState(false);
-  const [backupFile, setBackupFile] = useState<File>();
-  const [recoveryKey, setRecoveryKey] = useState('');
-  const [confirmPhrase, setConfirmPhrase] = useState('');
+  const bootstrap = useBootstrapAdmin()
+  const login = useLogin()
+  const mutation = mode === 'bootstrap' ? bootstrap : login
+  const [restoreOpen, setRestoreOpen] = useState(false)
+  const [backupFile, setBackupFile] = useState<File>()
+  const [recoveryKey, setRecoveryKey] = useState('')
+  const [confirmPhrase, setConfirmPhrase] = useState('')
   const recoveryStatus = useQuery({
     queryKey: ['bootstrap-recovery', 'status'],
     queryFn: getBootstrapRecoveryStatus,
     enabled: mode === 'bootstrap' && restoreOpen,
     retry: false,
-  });
+  })
   const restore = useMutation({
     mutationFn: bootstrapRestore,
     onSuccess: () => window.location.reload(),
-  });
+  })
   const {
     register,
     handleSubmit,
@@ -45,7 +45,7 @@ export function AuthPage({ mode }: { mode: 'bootstrap' | 'login' }) {
       username: mode === 'login' ? import.meta.env.VITE_DEFAULT_LOGIN_USERNAME || 'admin' : 'admin',
       password: mode === 'login' ? import.meta.env.VITE_DEFAULT_LOGIN_PASSWORD || '' : '',
     },
-  });
+  })
 
   return (
     <main className="auth-page">
@@ -157,5 +157,5 @@ export function AuthPage({ mode }: { mode: 'bootstrap' | 'login' }) {
         </form>
       </section>
     </main>
-  );
+  )
 }

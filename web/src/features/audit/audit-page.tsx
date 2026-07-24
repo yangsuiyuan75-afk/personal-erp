@@ -1,15 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
-import { DataTable } from '@/components/data-table/data-table';
-import { Input, Select } from '@/components/ui/field';
-import { apiClient } from '@/lib/axios/client';
-import { apiErrorMessage } from '@/lib/api-error';
-import { auditActionLabel, enumLabel } from '@/lib/enum-label';
-import type { MasterListResponse, MasterRow } from '@/features/master-data/api';
-import { useListUrlState } from '@/features/master-data/use-list-url-state';
+import { useQuery } from '@tanstack/react-query'
+import { Search } from 'lucide-react'
+import { DataTable } from '@/components/data-table/data-table'
+import { Input, Select } from '@/components/ui/field'
+import { apiClient } from '@/lib/axios/client'
+import { apiErrorMessage } from '@/lib/api-error'
+import { auditActionLabel, enumLabel } from '@/lib/enum-label'
+import type { MasterListResponse, MasterRow } from '@/features/master-data/api'
+import { useListUrlState } from '@/features/master-data/use-list-url-state'
 
 async function listAudit(params: Record<string, unknown>): Promise<MasterListResponse> {
-  const response = await apiClient.get<MasterListResponse>('/audit-logs', { params });
+  const response = await apiClient.get<MasterListResponse>('/audit-logs', { params })
   return {
     ...response.data,
     data: response.data.data.map((row) => ({
@@ -18,12 +18,12 @@ async function listAudit(params: Record<string, unknown>): Promise<MasterListRes
       name: String(row.entityType),
       status: 'ACTIVE',
     })) as MasterRow[],
-  };
+  }
 }
 
 export function AuditPage() {
-  const { params, keyword, setKeyword, setParam } = useListUrlState();
-  const query = useQuery({ queryKey: ['audit', params], queryFn: () => listAudit(params) });
+  const { params, keyword, setKeyword, setParam } = useListUrlState()
+  const query = useQuery({ queryKey: ['audit', params], queryFn: () => listAudit(params) })
   return (
     <section className="page-section">
       <header className="page-heading">
@@ -86,5 +86,5 @@ export function AuditPage() {
         />
       </div>
     </section>
-  );
+  )
 }

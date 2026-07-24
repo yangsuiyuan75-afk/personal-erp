@@ -4,5 +4,5 @@ export function FullPageLoading({ label = '正在加载本地工作区…' }: { 
       <span className="spinner" />
       <p>{label}</p>
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -12,142 +12,142 @@ import {
   IsUUID,
   MaxLength,
   ValidateNested,
-} from 'class-validator';
-import { ClaimResolutionType, QualityResponsibility } from '@prisma/client';
-import { ListQueryDto } from '../../../common/dto/list-query.dto';
+} from 'class-validator'
+import { ClaimResolutionType, QualityResponsibility } from '@prisma/client'
+import { ListQueryDto } from '../../../common/dto/list-query.dto'
 
 export class QualityQueryDto extends ListQueryDto {
   @IsOptional()
   @IsUUID()
-  supplierId?: string;
+  supplierId?: string
 
   @IsOptional()
   @IsUUID()
-  skuId?: string;
+  skuId?: string
 
   @IsOptional()
   @IsString()
-  documentStatus?: string;
+  documentStatus?: string
 
   @IsOptional()
   @IsEnum(QualityResponsibility)
-  responsibility?: QualityResponsibility;
+  responsibility?: QualityResponsibility
 
   @IsOptional()
   @IsEnum(ClaimResolutionType)
-  resolutionType?: ClaimResolutionType;
+  resolutionType?: ClaimResolutionType
 }
 
 export class QualityInspectionItemDto {
   @IsUUID()
-  salesReturnItemId!: string;
+  salesReturnItemId!: string
 
   @IsNumberString()
-  goodQuantity!: string;
+  goodQuantity!: string
 
   @IsNumberString()
-  defectiveQuantity!: string;
+  defectiveQuantity!: string
 
   @IsNumberString()
-  supplierClaimQuantity!: string;
+  supplierClaimQuantity!: string
 
   @IsNumberString()
-  scrapQuantity!: string;
+  scrapQuantity!: string
 
   @IsEnum(QualityResponsibility)
-  responsibility!: QualityResponsibility;
+  responsibility!: QualityResponsibility
 
   @IsOptional()
   @IsUUID()
-  supplierId?: string;
+  supplierId?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(2000)
-  defectDescription?: string;
+  defectDescription?: string
 }
 
 export class CreateQualityInspectionDto {
   @IsUUID()
-  salesReturnId!: string;
+  salesReturnId!: string
 
   @IsISO8601({ strict: true })
-  inspectedAt!: string;
+  inspectedAt!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(2000)
-  notes?: string;
+  notes?: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => QualityInspectionItemDto)
-  items!: QualityInspectionItemDto[];
+  items!: QualityInspectionItemDto[]
 }
 
 export class ConfirmQualityInspectionDto {
   @IsOptional()
   @IsUUID()
-  availableLocationId?: string;
+  availableLocationId?: string
 
   @IsOptional()
   @IsUUID()
-  defectiveLocationId?: string;
+  defectiveLocationId?: string
 
   @IsOptional()
   @IsUUID()
-  claimLocationId?: string;
+  claimLocationId?: string
 
   @IsOptional()
   @IsUUID()
-  scrapLocationId?: string;
+  scrapLocationId?: string
 }
 
 export class CreateClaimSettlementDto {
   @IsEnum(ClaimResolutionType)
-  resolutionType!: ClaimResolutionType;
+  resolutionType!: ClaimResolutionType
 
   @IsOptional()
   @IsUUID()
-  supplierClaimItemId?: string;
+  supplierClaimItemId?: string
 
   @IsOptional()
   @IsNumberString()
-  quantity?: string;
+  quantity?: string
 
   @IsOptional()
   @IsNumberString()
-  amount?: string;
+  amount?: string
 
   @IsOptional()
   @IsUUID()
-  replacementLocationId?: string;
+  replacementLocationId?: string
 
   @IsOptional()
   @IsUUID()
-  claimStockLocationId?: string;
+  claimStockLocationId?: string
 
   @IsOptional()
   @IsUUID()
-  scrapLocationId?: string;
+  scrapLocationId?: string
 
   @IsOptional()
   @IsNumberString()
-  disposeQuantity?: string;
+  disposeQuantity?: string
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
-  batchNo?: string;
+  batchNo?: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(2000)
-  remark?: string;
+  remark?: string
 }

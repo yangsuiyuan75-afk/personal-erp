@@ -1,15 +1,15 @@
-import { ClipboardCheck, PackageMinus, Plus, RotateCcw, Search, Store } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { DataTable, type DataTableColumn } from '@/components/data-table/data-table';
-import { Button } from '@/components/ui/button';
-import { Input, Select } from '@/components/ui/field';
-import type { MasterRow } from '@/features/master-data/api';
-import { useListUrlState } from '@/features/master-data/use-list-url-state';
-import { apiErrorMessage } from '@/lib/api-error';
-import { enumLabel } from '@/lib/enum-label';
-import type { SalesView } from './api';
-import { SalesDialogs, type SalesDialogKind } from './sales-dialogs';
-import { useSalesList, useSalesMutations } from './use-sales';
+import { ClipboardCheck, PackageMinus, Plus, RotateCcw, Search, Store } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
+import { Button } from '@/components/ui/button'
+import { Input, Select } from '@/components/ui/field'
+import type { MasterRow } from '@/features/master-data/api'
+import { useListUrlState } from '@/features/master-data/use-list-url-state'
+import { apiErrorMessage } from '@/lib/api-error'
+import { enumLabel } from '@/lib/enum-label'
+import type { SalesView } from './api'
+import { SalesDialogs, type SalesDialogKind } from './sales-dialogs'
+import { useSalesList, useSalesMutations } from './use-sales'
 
 const views: Array<{ id: SalesView; label: string }> = [
   { id: 'orders', label: '销售订单' },
@@ -18,7 +18,7 @@ const views: Array<{ id: SalesView; label: string }> = [
   { id: 'prices', label: '销售价格' },
   { id: 'receivables', label: '应收' },
   { id: 'refunds', label: '客户退款' },
-];
+]
 
 const sortConfig: Record<SalesView, { fallback: string; allowed: string[] }> = {
   prices: {
@@ -33,7 +33,7 @@ const sortConfig: Record<SalesView, { fallback: string; allowed: string[] }> = {
     allowed: ['createdAt', 'occurredAt', 'outstandingAmount', 'originalAmount'],
   },
   refunds: { fallback: 'createdAt', allowed: ['createdAt', 'amount', 'paidAmount'] },
-};
+}
 
 const statusText: Record<string, string> = {
   DRAFT: '草稿',
@@ -50,33 +50,33 @@ const statusText: Record<string, string> = {
   SETTLED: '已结清',
   PAID: '已退款',
   VOID: '已作废',
-};
+}
 
 function money(value: unknown) {
-  return `¥${Number(value ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `¥${Number(value ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export function sumSalesQuantity(row: MasterRow) {
   return salesItems(row).reduce((total, item) => {
-    if (!item || typeof item !== 'object') return total;
-    const value = Number((item as { quantity?: unknown }).quantity ?? 0);
-    return total + (Number.isFinite(value) ? value : 0);
-  }, 0);
+    if (!item || typeof item !== 'object') return total
+    const value = Number((item as { quantity?: unknown }).quantity ?? 0)
+    return total + (Number.isFinite(value) ? value : 0)
+  }, 0)
 }
 
-type SalesItem = { sku?: { code?: unknown; name?: unknown }; quantity?: unknown };
+type SalesItem = { sku?: { code?: unknown; name?: unknown }; quantity?: unknown }
 
 function salesItems(row: MasterRow): SalesItem[] {
   const items = [
     row.items,
     (row.salesIssue as { items?: unknown } | undefined)?.items,
     (row.salesReturn as { items?: unknown } | undefined)?.items,
-  ].find(Array.isArray);
-  if (Array.isArray(items)) return items as SalesItem[];
-  const sku = row.sku;
+  ].find(Array.isArray)
+  if (Array.isArray(items)) return items as SalesItem[]
+  const sku = row.sku
   return sku && typeof sku === 'object'
     ? [{ sku: sku as SalesItem['sku'], quantity: row.minQuantity }]
-    : [];
+    : []
 }
 
 function salesSku(row: MasterRow) {
@@ -84,7 +84,7 @@ function salesSku(row: MasterRow) {
     .map((item) =>
       [String(item.sku?.code ?? ''), String(item.sku?.name ?? '')].filter(Boolean).join(' · '),
     )
-    .filter(Boolean);
+    .filter(Boolean)
   return labels.length ? (
     <div className="business-sku-summary">
       {labels.map((label) => (
@@ -93,20 +93,20 @@ function salesSku(row: MasterRow) {
     </div>
   ) : (
     '—'
-  );
+  )
 }
 
 function quantity(value: number) {
-  return value.toLocaleString('zh-CN', { maximumFractionDigits: 6 });
+  return value.toLocaleString('zh-CN', { maximumFractionDigits: 6 })
 }
 
 function status(row: MasterRow) {
-  const value = String(row.status);
+  const value = String(row.status)
   return (
     <span className={`business-status business-${value.toLowerCase()}`}>
       {statusText[value] ?? enumLabel(value)}
     </span>
-  );
+  )
 }
 
 function columns(view: SalesView): DataTableColumn[] {
@@ -125,7 +125,7 @@ function columns(view: SalesView): DataTableColumn[] {
       { key: 'effectiveFrom', label: '生效时间' },
       { key: 'effectiveTo', label: '失效时间', sortable: false },
       { key: 'status', label: '状态', render: status, sortable: false },
-    ];
+    ]
   if (view === 'orders')
     return [
       { key: 'orderNo', label: '销售单号' },
@@ -141,7 +141,7 @@ function columns(view: SalesView): DataTableColumn[] {
       { key: 'totalAmount', label: '订单金额', render: (row) => money(row.totalAmount) },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'orderDate', label: '下单时间' },
-    ];
+    ]
   if (view === 'issues')
     return [
       { key: 'issueNo', label: '出库单号', sortable: false },
@@ -165,7 +165,7 @@ function columns(view: SalesView): DataTableColumn[] {
       },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'occurredAt', label: '出库时间' },
-    ];
+    ]
   if (view === 'returns')
     return [
       { key: 'returnNo', label: '退货单号', sortable: false },
@@ -183,7 +183,7 @@ function columns(view: SalesView): DataTableColumn[] {
       { key: 'totalRefund', label: '退款金额', render: (row) => money(row.totalRefund) },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'occurredAt', label: '退货时间' },
-    ];
+    ]
   if (view === 'receivables')
     return [
       { key: 'receivableNo', label: '应收编号', sortable: false },
@@ -216,7 +216,7 @@ function columns(view: SalesView): DataTableColumn[] {
       },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'occurredAt', label: '发生时间' },
-    ];
+    ]
   return [
     { key: 'refundNo', label: '退款编号', sortable: false },
     { key: 'skuSummary', label: 'SKU · 名称', render: salesSku, sortable: false },
@@ -233,15 +233,15 @@ function columns(view: SalesView): DataTableColumn[] {
     { key: 'paidAmount', label: '已退金额', render: (row) => money(row.paidAmount) },
     { key: 'status', label: '状态', render: status, sortable: false },
     { key: 'createdAt', label: '创建时间' },
-  ];
+  ]
 }
 
 export function SalesPage() {
-  const { params, keyword, setKeyword, setParam } = useListUrlState();
-  const rawView = new URLSearchParams(window.location.search).get('view');
+  const { params, keyword, setKeyword, setParam } = useListUrlState()
+  const rawView = new URLSearchParams(window.location.search).get('view')
   const view: SalesView = views.some((item) => item.id === rawView)
     ? (rawView as SalesView)
-    : 'orders';
+    : 'orders'
   const queryParams = useMemo(
     () => ({
       ...params,
@@ -250,12 +250,12 @@ export function SalesPage() {
         : sortConfig[view].fallback,
     }),
     [params, view],
-  );
-  const list = useSalesList(view, queryParams);
-  const mutations = useSalesMutations();
-  const [dialog, setDialog] = useState<SalesDialogKind>();
-  const [issue, setIssue] = useState<MasterRow>();
-  const rows = list.data?.data ?? [];
+  )
+  const list = useSalesList(view, queryParams)
+  const mutations = useSalesMutations()
+  const [dialog, setDialog] = useState<SalesDialogKind>()
+  const [issue, setIssue] = useState<MasterRow>()
+  const rows = list.data?.data ?? []
   const total = rows.reduce(
     (sum, row) =>
       sum +
@@ -268,13 +268,13 @@ export function SalesPage() {
           0,
       ),
     0,
-  );
-  const outstanding = rows.reduce((sum, row) => sum + Number(row.outstandingAmount ?? 0), 0);
+  )
+  const outstanding = rows.reduce((sum, row) => sum + Number(row.outstandingAmount ?? 0), 0)
   const actionForView: Partial<Record<SalesView, SalesDialogKind>> = {
     prices: 'price',
     orders: 'order',
     returns: 'return',
-  };
+  }
   return (
     <section className="page-section business-page">
       <header className="page-heading">
@@ -286,8 +286,8 @@ export function SalesPage() {
         {actionForView[view] ? (
           <Button
             onClick={() => {
-              setIssue(undefined);
-              setDialog(actionForView[view]);
+              setIssue(undefined)
+              setDialog(actionForView[view])
             }}
           >
             <Plus size={17} />{' '}
@@ -375,8 +375,8 @@ export function SalesPage() {
                 <button
                   aria-label={`销售出库 ${row.code}`}
                   onClick={() => {
-                    setIssue(row);
-                    setDialog('issue');
+                    setIssue(row)
+                    setDialog('issue')
                   }}
                   type="button"
                 >
@@ -403,11 +403,11 @@ export function SalesPage() {
           onPageChange={(page) => setParam('page', String(page), false)}
           onPageSizeChange={(size) => setParam('pageSize', String(size))}
           onSort={(key) => {
-            setParam('sortBy', key);
+            setParam('sortBy', key)
             setParam(
               'sortOrder',
               queryParams.sortBy === key && queryParams.sortOrder === 'asc' ? 'desc' : 'asc',
-            );
+            )
           }}
           rows={rows}
           sortBy={queryParams.sortBy}
@@ -418,10 +418,10 @@ export function SalesPage() {
         active={dialog}
         issue={issue}
         onOpenChange={(next) => {
-          setDialog(next);
-          if (!next) setIssue(undefined);
+          setDialog(next)
+          if (!next) setIssue(undefined)
         }}
       />
     </section>
-  );
+  )
 }

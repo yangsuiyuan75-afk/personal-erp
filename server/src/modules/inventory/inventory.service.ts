@@ -1,12 +1,12 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { Readable } from 'node:stream';
+import { createHash, randomUUID } from 'node:crypto'
+import { Readable } from 'node:stream'
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
-} from '@nestjs/common';
+} from '@nestjs/common'
 import {
   AdjustmentDirection,
   ChannelInventoryMode,
@@ -16,12 +16,12 @@ import {
   InventoryTransactionType,
   MasterDataStatus,
   Prisma,
-} from '@prisma/client';
-import { paginationMeta } from '../../common/dto/list-query.dto';
-import { serializableTransaction } from '../../common/utils/serializable-transaction';
-import { PrismaService } from '../../database/prisma.service';
-import { AuditService } from '../audit/audit.service';
-import type { AuthUser } from '../auth/auth.types';
+} from '@prisma/client'
+import { paginationMeta } from '../../common/dto/list-query.dto'
+import { serializableTransaction } from '../../common/utils/serializable-transaction'
+import { PrismaService } from '../../database/prisma.service'
+import { AuditService } from '../audit/audit.service'
+import type { AuthUser } from '../auth/auth.types'
 import type {
   CreateAdjustmentDto,
   CreateChannelAllocationDto,
@@ -31,65 +31,65 @@ import type {
   InventoryQueryDto,
   OpeningRowDto,
   UpdateLocationDto,
-} from './dto/inventory.dto';
-import { InventoryPostingService } from './inventory-posting.service';
+} from './dto/inventory.dto'
+import { InventoryPostingService } from './inventory-posting.service'
 
-const BALANCE_SORT = ['updatedAt', 'onHandQuantity', 'averageCost', 'inventoryValue'] as const;
-const TRANSACTION_SORT = ['occurredAt', 'postedAt', 'transactionNo'] as const;
-const LOCATION_SORT = ['createdAt', 'code', 'name', 'updatedAt'] as const;
-const DOCUMENT_SORT = ['createdAt', 'occurredAt', 'updatedAt'] as const;
+const BALANCE_SORT = ['updatedAt', 'onHandQuantity', 'averageCost', 'inventoryValue'] as const
+const TRANSACTION_SORT = ['occurredAt', 'postedAt', 'transactionNo'] as const
+const LOCATION_SORT = ['createdAt', 'code', 'name', 'updatedAt'] as const
+const DOCUMENT_SORT = ['createdAt', 'occurredAt', 'updatedAt'] as const
 
 function documentNo(prefix: string): string {
-  return `${prefix}-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
+  return `${prefix}-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`
 }
 
 function positive(value: string, label = '数量'): Prisma.Decimal {
-  let decimal: Prisma.Decimal;
+  let decimal: Prisma.Decimal
   try {
-    decimal = new Prisma.Decimal(value);
+    decimal = new Prisma.Decimal(value)
   } catch {
     throw new UnprocessableEntityException({
       code: 'DECIMAL_INVALID',
       message: `${label}格式无效`,
-    });
+    })
   }
   if (!decimal.isFinite() || decimal.lessThanOrEqualTo(0)) {
     throw new UnprocessableEntityException({
       code: 'DECIMAL_INVALID',
       message: `${label}必须大于 0`,
-    });
+    })
   }
-  return decimal;
+  return decimal
 }
 
 function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = '';
-  let quoted = false;
-  const source = text.replace(/^\uFEFF/, '');
+  const rows: string[][] = []
+  let row: string[] = []
+  let cell = ''
+  let quoted = false
+  const source = text.replace(/^\uFEFF/, '')
   for (let index = 0; index < source.length; index += 1) {
-    const character = source[index];
+    const character = source[index]
     if (character === '"') {
       if (quoted && source[index + 1] === '"') {
-        cell += '"';
-        index += 1;
-      } else quoted = !quoted;
+        cell += '"'
+        index += 1
+      } else quoted = !quoted
     } else if (character === ',' && !quoted) {
-      row.push(cell.trim());
-      cell = '';
+      row.push(cell.trim())
+      cell = ''
     } else if ((character === '\n' || character === '\r') && !quoted) {
-      if (character === '\r' && source[index + 1] === '\n') index += 1;
-      row.push(cell.trim());
-      if (row.some(Boolean)) rows.push(row);
-      row = [];
-      cell = '';
-    } else cell += character;
+      if (character === '\r' && source[index + 1] === '\n') index += 1
+      row.push(cell.trim())
+      if (row.some(Boolean)) rows.push(row)
+      row = []
+      cell = ''
+    } else cell += character
   }
-  row.push(cell.trim());
-  if (row.some(Boolean)) rows.push(row);
-  if (quoted) throw new BadRequestException({ code: 'CSV_INVALID', message: 'CSV 引号未闭合' });
-  return rows;
+  row.push(cell.trim())
+  if (row.some(Boolean)) rows.push(row)
+  if (quoted) throw new BadRequestException({ code: 'CSV_INVALID', message: 'CSV 引号未闭合' })
+  return rows
 }
 
 @Injectable()
@@ -101,7 +101,7 @@ export class InventoryService {
   ) {}
 
   async listLocations(query: InventoryQueryDto) {
-    this.assertSort(query.sortBy, LOCATION_SORT);
+    this.assertSort(query.sortBy, LOCATION_SORT)
     const where: Prisma.InventoryLocationWhereInput = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.salesChannelId ? { salesChannelId: query.salesChannelId } : {}),
@@ -113,7 +113,7 @@ export class InventoryService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.inventoryLocation.findMany({
         where,
@@ -126,12 +126,12 @@ export class InventoryService {
         take: query.pageSize,
       }),
       this.prisma.inventoryLocation.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async createLocation(payload: CreateLocationDto, actor: AuthUser, requestId?: string) {
-    await this.validateLocation(payload);
+    await this.validateLocation(payload)
     const data = await this.prisma.inventoryLocation.create({
       data: {
         code: payload.code.trim(),
@@ -141,7 +141,7 @@ export class InventoryService {
         salesChannelId: payload.salesChannelId,
         isLeaf: payload.isLeaf ?? true,
       },
-    });
+    })
     await this.audit.record({
       userId: actor.id,
       module: 'INVENTORY',
@@ -150,8 +150,8 @@ export class InventoryService {
       entityId: data.id,
       after: data,
       requestId,
-    });
-    return data;
+    })
+    return data
   }
 
   async updateLocation(
@@ -160,7 +160,7 @@ export class InventoryService {
     actor: AuthUser,
     requestId?: string,
   ) {
-    const before = await this.location(id);
+    const before = await this.location(id)
     await this.validateLocation(
       {
         code: before.code,
@@ -171,19 +171,19 @@ export class InventoryService {
         isLeaf: payload.isLeaf ?? before.isLeaf,
       },
       id,
-    );
+    )
     if (payload.isLeaf === false) {
       const nonZero = await this.prisma.inventoryBalance.count({
         where: { locationId: id, onHandQuantity: { not: 0 } },
-      });
+      })
       if (nonZero) {
         throw new ConflictException({
           code: 'LOCATION_HAS_STOCK',
           message: '已有库存的地点不能改为非叶子节点',
-        });
+        })
       }
     }
-    const data = await this.prisma.inventoryLocation.update({ where: { id }, data: payload });
+    const data = await this.prisma.inventoryLocation.update({ where: { id }, data: payload })
     await this.audit.record({
       userId: actor.id,
       module: 'INVENTORY',
@@ -193,28 +193,28 @@ export class InventoryService {
       before,
       after: data,
       requestId,
-    });
-    return data;
+    })
+    return data
   }
 
   async deactivateLocation(id: string, actor: AuthUser, requestId?: string): Promise<void> {
-    const before = await this.location(id);
+    const before = await this.location(id)
     const [nonZero, activeChildren] = await Promise.all([
       this.prisma.inventoryBalance.count({ where: { locationId: id, onHandQuantity: { not: 0 } } }),
       this.prisma.inventoryLocation.count({
         where: { parentId: id, status: MasterDataStatus.ACTIVE },
       }),
-    ]);
+    ])
     if (nonZero || activeChildren) {
       throw new ConflictException({
         code: 'LOCATION_IN_USE',
         message: '存在库存或启用子地点，不能停用',
-      });
+      })
     }
     const after = await this.prisma.inventoryLocation.update({
       where: { id },
       data: { status: MasterDataStatus.INACTIVE },
-    });
+    })
     await this.audit.record({
       userId: actor.id,
       module: 'INVENTORY',
@@ -224,11 +224,11 @@ export class InventoryService {
       before,
       after,
       requestId,
-    });
+    })
   }
 
   async listBalances(query: InventoryQueryDto) {
-    this.assertSort(query.sortBy, BALANCE_SORT);
+    this.assertSort(query.sortBy, BALANCE_SORT)
     const where: Prisma.InventoryBalanceWhereInput = {
       ...(query.locationId ? { locationId: query.locationId } : {}),
       ...(query.skuId ? { skuId: query.skuId } : {}),
@@ -244,7 +244,7 @@ export class InventoryService {
             ],
           }
         : {}),
-    };
+    }
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.inventoryBalance.findMany({
         where,
@@ -264,7 +264,7 @@ export class InventoryService {
         take: query.pageSize,
       }),
       this.prisma.inventoryBalance.count({ where }),
-    ]);
+    ])
     const data = rows.map((row) => ({
       ...row,
       id: `${row.locationId}:${row.skuId}:${row.stockStatus}`,
@@ -273,12 +273,12 @@ export class InventoryService {
       availableQuantity: row.onHandQuantity.minus(row.reservedQuantity),
       locationName: row.location.name,
       skuCode: row.sku.code,
-    }));
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    }))
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async listTransactions(query: InventoryQueryDto) {
-    this.assertSort(query.sortBy, TRANSACTION_SORT);
+    this.assertSort(query.sortBy, TRANSACTION_SORT)
     const where: Prisma.InventoryTransactionWhereInput = {
       ...(query.transactionType ? { type: query.transactionType } : {}),
       ...(query.createdFrom || query.createdTo
@@ -308,7 +308,7 @@ export class InventoryService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.inventoryTransaction.findMany({
         where,
@@ -318,8 +318,8 @@ export class InventoryService {
         take: query.pageSize,
       }),
       this.prisma.inventoryTransaction.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async transaction(id: string) {
@@ -338,13 +338,13 @@ export class InventoryService {
           },
         },
       },
-    });
-    if (!data) throw new NotFoundException({ code: 'NOT_FOUND', message: '库存流水不存在' });
-    return data;
+    })
+    if (!data) throw new NotFoundException({ code: 'NOT_FOUND', message: '库存流水不存在' })
+    return data
   }
 
   async listBatches(query: InventoryQueryDto) {
-    this.assertSort(query.sortBy, ['receivedAt', 'batchNo', 'remainingQuantity'] as const);
+    this.assertSort(query.sortBy, ['receivedAt', 'batchNo', 'remainingQuantity'] as const)
     const where: Prisma.InventoryBatchWhereInput = {
       ...(query.skuId ? { skuId: query.skuId } : {}),
       ...(query.supplierId ? { supplierId: query.supplierId } : {}),
@@ -357,7 +357,7 @@ export class InventoryService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.inventoryBatch.findMany({
         where,
@@ -373,21 +373,21 @@ export class InventoryService {
         take: query.pageSize,
       }),
       this.prisma.inventoryBatch.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   openingTemplate(): Readable {
     const sample = [
       'locationCode,skuCode,stockStatus,quantity,unitCost,batchNo,remark',
       'MAIN,SKU-001,AVAILABLE,100,12.500000,OPENING-001,期初库存',
-    ].join('\r\n');
-    return Readable.from([`\uFEFF${sample}\r\n`]);
+    ].join('\r\n')
+    return Readable.from([`\uFEFF${sample}\r\n`])
   }
 
   openingRowsFromCsv(buffer: Buffer): OpeningRowDto[] {
-    const rows = parseCsv(buffer.toString('utf8'));
-    const header = rows.shift()?.map((value) => value.trim());
+    const rows = parseCsv(buffer.toString('utf8'))
+    const header = rows.shift()?.map((value) => value.trim())
     const expected = [
       'locationCode',
       'skuCode',
@@ -396,12 +396,12 @@ export class InventoryService {
       'unitCost',
       'batchNo',
       'remark',
-    ];
+    ]
     if (!header || expected.some((field, index) => header[index] !== field)) {
       throw new BadRequestException({
         code: 'CSV_HEADER_INVALID',
         message: '期初库存 CSV 表头不正确',
-      });
+      })
     }
     return rows.map((row) => ({
       locationCode: row[0],
@@ -411,13 +411,13 @@ export class InventoryService {
       unitCost: row[4],
       batchNo: row[5],
       remark: row[6] || undefined,
-    }));
+    }))
   }
 
   async previewOpening(rows: OpeningRowDto[]) {
-    const locationCodes = [...new Set(rows.map((row) => row.locationCode.trim()))];
-    const skuCodes = [...new Set(rows.map((row) => row.skuCode.trim()))];
-    const batchNos = [...new Set(rows.map((row) => row.batchNo.trim()))];
+    const locationCodes = [...new Set(rows.map((row) => row.locationCode.trim()))]
+    const skuCodes = [...new Set(rows.map((row) => row.skuCode.trim()))]
+    const batchNos = [...new Set(rows.map((row) => row.batchNo.trim()))]
     const [locations, skus, existingBatches] = await Promise.all([
       this.prisma.inventoryLocation.findMany({ where: { code: { in: locationCodes } } }),
       this.prisma.sku.findMany({ where: { code: { in: skuCodes } } }),
@@ -425,48 +425,48 @@ export class InventoryService {
         where: { batchNo: { in: batchNos } },
         select: { batchNo: true },
       }),
-    ]);
-    const locationMap = new Map(locations.map((location) => [location.code, location]));
-    const skuMap = new Map(skus.map((sku) => [sku.code, sku]));
-    const usedBatches = new Set(existingBatches.map((batch) => batch.batchNo));
-    const keys = new Set<string>();
-    let totalQuantity = new Prisma.Decimal(0);
-    let totalValue = new Prisma.Decimal(0);
+    ])
+    const locationMap = new Map(locations.map((location) => [location.code, location]))
+    const skuMap = new Map(skus.map((sku) => [sku.code, sku]))
+    const usedBatches = new Set(existingBatches.map((batch) => batch.batchNo))
+    const keys = new Set<string>()
+    let totalQuantity = new Prisma.Decimal(0)
+    let totalValue = new Prisma.Decimal(0)
     const previewRows = rows.map((row, index) => {
-      const errors: string[] = [];
-      const location = locationMap.get(row.locationCode.trim());
-      const sku = skuMap.get(row.skuCode.trim());
+      const errors: string[] = []
+      const location = locationMap.get(row.locationCode.trim())
+      const sku = skuMap.get(row.skuCode.trim())
       if (!location || location.status !== MasterDataStatus.ACTIVE || !location.isLeaf)
-        errors.push('库存地点不存在、已停用或不是叶子节点');
-      if (!sku || sku.status !== MasterDataStatus.ACTIVE) errors.push('SKU 不存在或已停用');
+        errors.push('库存地点不存在、已停用或不是叶子节点')
+      if (!sku || sku.status !== MasterDataStatus.ACTIVE) errors.push('SKU 不存在或已停用')
       if (!Object.values(InventoryStockStatus).includes(row.stockStatus))
-        errors.push('库存状态无效');
-      let quantity = new Prisma.Decimal(0);
-      let unitCost = new Prisma.Decimal(0);
+        errors.push('库存状态无效')
+      let quantity = new Prisma.Decimal(0)
+      let unitCost = new Prisma.Decimal(0)
       try {
-        quantity = new Prisma.Decimal(row.quantity);
-        if (quantity.lessThanOrEqualTo(0)) errors.push('数量必须大于 0');
+        quantity = new Prisma.Decimal(row.quantity)
+        if (quantity.lessThanOrEqualTo(0)) errors.push('数量必须大于 0')
       } catch {
-        errors.push('数量格式无效');
+        errors.push('数量格式无效')
       }
       try {
-        unitCost = new Prisma.Decimal(row.unitCost);
-        if (unitCost.isNegative()) errors.push('成本不能为负数');
+        unitCost = new Prisma.Decimal(row.unitCost)
+        if (unitCost.isNegative()) errors.push('成本不能为负数')
       } catch {
-        errors.push('成本格式无效');
+        errors.push('成本格式无效')
       }
-      const batchNo = row.batchNo.trim();
-      if (!batchNo) errors.push('批次号不能为空');
-      if (usedBatches.has(batchNo)) errors.push('批次号已存在或在文件内重复');
-      usedBatches.add(batchNo);
+      const batchNo = row.batchNo.trim()
+      if (!batchNo) errors.push('批次号不能为空')
+      if (usedBatches.has(batchNo)) errors.push('批次号已存在或在文件内重复')
+      usedBatches.add(batchNo)
       if (location && sku) {
-        const key = `${location.id}:${sku.id}:${row.stockStatus}`;
-        if (keys.has(key)) errors.push('同一地点、SKU 与库存状态只能出现一次');
-        keys.add(key);
+        const key = `${location.id}:${sku.id}:${row.stockStatus}`
+        if (keys.has(key)) errors.push('同一地点、SKU 与库存状态只能出现一次')
+        keys.add(key)
       }
       if (!errors.length) {
-        totalQuantity = totalQuantity.plus(quantity);
-        totalValue = totalValue.plus(quantity.mul(unitCost));
+        totalQuantity = totalQuantity.plus(quantity)
+        totalValue = totalValue.plus(quantity.mul(unitCost))
       }
       return {
         rowNumber: index + 2,
@@ -476,8 +476,8 @@ export class InventoryService {
         skuId: sku?.id,
         skuName: sku?.name,
         errors,
-      };
-    });
+      }
+    })
     return {
       valid: previewRows.every((row) => row.errors.length === 0),
       rowCount: previewRows.length,
@@ -485,34 +485,34 @@ export class InventoryService {
       totalQuantity: totalQuantity.toFixed(4),
       totalValue: totalValue.toFixed(4),
       rows: previewRows,
-    };
+    }
   }
 
   async createOpening(payload: CreateOpeningDto, actor: AuthUser, requestId?: string) {
-    const preview = await this.previewOpening(payload.rows);
+    const preview = await this.previewOpening(payload.rows)
     if (!preview.valid) {
       throw new UnprocessableEntityException({
         code: 'OPENING_PREVIEW_INVALID',
         message: '期初库存存在校验错误',
         details: preview.rows.filter((row) => row.errors.length),
-      });
+      })
     }
-    const requestHash = createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+    const requestHash = createHash('sha256').update(JSON.stringify(payload)).digest('hex')
     const response = await serializableTransaction(this.prisma, async (transaction) => {
       const existing = await transaction.idempotencyRecord.findUnique({
         where: { scope_key: { scope: 'OPENING_IMPORT', key: payload.importKey } },
-      });
+      })
       if (existing) {
         if (existing.requestHash !== requestHash)
           throw new ConflictException({
             code: 'IDEMPOTENCY_CONFLICT',
             message: '相同导入键已用于不同内容',
-          });
-        const saved = existing.responseJson as { id: string };
+          })
+        const saved = existing.responseJson as { id: string }
         return transaction.inventoryOpening.findUniqueOrThrow({
           where: { id: saved.id },
           include: { items: true },
-        });
+        })
       }
       const opening = await transaction.inventoryOpening.create({
         data: {
@@ -533,7 +533,7 @@ export class InventoryService {
           },
         },
         include: { items: true },
-      });
+      })
       await transaction.idempotencyRecord.create({
         data: {
           scope: 'OPENING_IMPORT',
@@ -543,9 +543,9 @@ export class InventoryService {
           statusCode: 201,
           expiresAt: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000),
         },
-      });
-      return opening;
-    });
+      })
+      return opening
+    })
     await this.audit.record({
       userId: actor.id,
       module: 'INVENTORY',
@@ -554,18 +554,18 @@ export class InventoryService {
       entityId: response.id,
       after: response,
       requestId,
-    });
-    return response;
+    })
+    return response
   }
 
   async postOpening(id: string, idempotencyKey: string, actor: AuthUser, requestId?: string) {
     const opening = await this.prisma.inventoryOpening.findUnique({
       where: { id },
       include: { items: true },
-    });
-    if (!opening) throw new NotFoundException({ code: 'NOT_FOUND', message: '期初库存单不存在' });
+    })
+    if (!opening) throw new NotFoundException({ code: 'NOT_FOUND', message: '期初库存单不存在' })
     if (opening.status === DocumentStatus.CANCELLED)
-      throw new ConflictException({ code: 'DOCUMENT_CANCELLED', message: '已取消单据不能过账' });
+      throw new ConflictException({ code: 'DOCUMENT_CANCELLED', message: '已取消单据不能过账' })
     return this.posting.post(
       {
         scope: `OPENING:${id}`,
@@ -597,31 +597,31 @@ export class InventoryService {
               transactionId: result.transactionId,
               postedAt: new Date(result.postedAt),
             },
-          });
+          })
           if (updated.count !== 1)
-            throw new ConflictException({ code: 'DOCUMENT_POSTED', message: '期初库存已过账' });
+            throw new ConflictException({ code: 'DOCUMENT_POSTED', message: '期初库存已过账' })
         },
       },
       actor,
       requestId,
-    );
+    )
   }
 
   async createAdjustment(payload: CreateAdjustmentDto, actor: AuthUser, requestId?: string) {
     for (const item of payload.items) {
-      positive(item.quantity);
+      positive(item.quantity)
       if (payload.direction === AdjustmentDirection.IN) {
         if (item.unitCost === undefined)
           throw new UnprocessableEntityException({
             code: 'COST_REQUIRED',
             message: '调增库存必须填写单位成本',
-          });
-        const cost = new Prisma.Decimal(item.unitCost);
+          })
+        const cost = new Prisma.Decimal(item.unitCost)
         if (cost.isNegative())
           throw new UnprocessableEntityException({
             code: 'COST_INVALID',
             message: '成本不能为负数',
-          });
+          })
       }
     }
     const data = await this.prisma.inventoryAdjustment.create({
@@ -642,7 +642,7 @@ export class InventoryService {
         },
       },
       include: { items: true },
-    });
+    })
     await this.audit.record({
       userId: actor.id,
       module: 'INVENTORY',
@@ -651,18 +651,17 @@ export class InventoryService {
       entityId: data.id,
       after: data,
       requestId,
-    });
-    return data;
+    })
+    return data
   }
 
   async postAdjustment(id: string, idempotencyKey: string, actor: AuthUser, requestId?: string) {
     const adjustment = await this.prisma.inventoryAdjustment.findUnique({
       where: { id },
       include: { items: true },
-    });
-    if (!adjustment)
-      throw new NotFoundException({ code: 'NOT_FOUND', message: '库存调整单不存在' });
-    const inbound = adjustment.direction === AdjustmentDirection.IN;
+    })
+    if (!adjustment) throw new NotFoundException({ code: 'NOT_FOUND', message: '库存调整单不存在' })
+    const inbound = adjustment.direction === AdjustmentDirection.IN
     return this.posting.post(
       {
         scope: `ADJUSTMENT:${id}`,
@@ -698,14 +697,14 @@ export class InventoryService {
               transactionId: result.transactionId,
               postedAt: new Date(result.postedAt),
             },
-          });
+          })
           if (updated.count !== 1)
-            throw new ConflictException({ code: 'DOCUMENT_POSTED', message: '库存调整单已过账' });
+            throw new ConflictException({ code: 'DOCUMENT_POSTED', message: '库存调整单已过账' })
         },
       },
       actor,
       requestId,
-    );
+    )
   }
 
   async createTransfer(payload: CreateTransferDto, actor: AuthUser, requestId?: string) {
@@ -713,17 +712,17 @@ export class InventoryService {
       throw new UnprocessableEntityException({
         code: 'TRANSFER_LOCATION_SAME',
         message: '调出与调入地点不能相同',
-      });
+      })
     const [from, to] = await Promise.all([
       this.location(payload.fromLocationId),
       this.location(payload.toLocationId),
-    ]);
+    ])
     if (!from.isLeaf || !to.isLeaf || from.status !== 'ACTIVE' || to.status !== 'ACTIVE')
       throw new UnprocessableEntityException({
         code: 'LOCATION_INVALID',
         message: '调拨地点必须是启用的叶子地点',
-      });
-    for (const item of payload.items) positive(item.quantity);
+      })
+    for (const item of payload.items) positive(item.quantity)
     const data = await this.prisma.inventoryTransfer.create({
       data: {
         transferNo: documentNo('TRF'),
@@ -741,7 +740,7 @@ export class InventoryService {
         },
       },
       include: { items: true, fromLocation: true, toLocation: true },
-    });
+    })
     await this.audit.record({
       userId: actor.id,
       module: 'INVENTORY',
@@ -750,16 +749,16 @@ export class InventoryService {
       entityId: data.id,
       after: data,
       requestId,
-    });
-    return data;
+    })
+    return data
   }
 
   async postTransfer(id: string, idempotencyKey: string, actor: AuthUser, requestId?: string) {
     const transfer = await this.prisma.inventoryTransfer.findUnique({
       where: { id },
       include: { items: true },
-    });
-    if (!transfer) throw new NotFoundException({ code: 'NOT_FOUND', message: '库存调拨单不存在' });
+    })
+    if (!transfer) throw new NotFoundException({ code: 'NOT_FOUND', message: '库存调拨单不存在' })
     return this.posting.post(
       {
         scope: `TRANSFER:${id}`,
@@ -794,14 +793,14 @@ export class InventoryService {
               transactionId: result.transactionId,
               postedAt: new Date(result.postedAt),
             },
-          });
+          })
           if (updated.count !== 1)
-            throw new ConflictException({ code: 'DOCUMENT_POSTED', message: '库存调拨单已过账' });
+            throw new ConflictException({ code: 'DOCUMENT_POSTED', message: '库存调拨单已过账' })
         },
       },
       actor,
       requestId,
-    );
+    )
   }
 
   async createChannelAllocation(
@@ -813,7 +812,7 @@ export class InventoryService {
       const [channel, location] = await Promise.all([
         transaction.salesChannel.findUnique({ where: { id: payload.salesChannelId } }),
         transaction.inventoryLocation.findUnique({ where: { id: payload.locationId } }),
-      ]);
+      ])
       if (
         !channel ||
         channel.status !== MasterDataStatus.ACTIVE ||
@@ -822,14 +821,14 @@ export class InventoryService {
         throw new UnprocessableEntityException({
           code: 'CHANNEL_MODE_INVALID',
           message: '只有启用的虚拟额度渠道可以创建渠道分配',
-        });
+        })
       if (!location || !location.isLeaf || location.status !== MasterDataStatus.ACTIVE)
         throw new UnprocessableEntityException({
           code: 'LOCATION_INVALID',
           message: '库存地点无效',
-        });
+        })
       for (const item of payload.items) {
-        const quantity = positive(item.quantity);
+        const quantity = positive(item.quantity)
         const [balance, aggregate] = await Promise.all([
           transaction.inventoryBalance.findUnique({
             where: {
@@ -850,16 +849,16 @@ export class InventoryService {
             },
             _sum: { quantity: true },
           }),
-        ]);
+        ])
         const available = (balance?.onHandQuantity ?? new Prisma.Decimal(0)).minus(
           balance?.reservedQuantity ?? 0,
-        );
-        const allocated = aggregate._sum.quantity ?? new Prisma.Decimal(0);
+        )
+        const allocated = aggregate._sum.quantity ?? new Prisma.Decimal(0)
         if (allocated.plus(quantity).greaterThan(available))
           throw new UnprocessableEntityException({
             code: 'CHANNEL_ALLOCATION_EXCEEDED',
             message: '渠道额度不能超过地点可用库存',
-          });
+          })
       }
       return transaction.channelAllocation.create({
         data: {
@@ -874,8 +873,8 @@ export class InventoryService {
           },
         },
         include: { items: { include: { sku: { select: { code: true, name: true } } } } },
-      });
-    });
+      })
+    })
     await this.audit.record({
       userId: actor.id,
       module: 'INVENTORY',
@@ -884,12 +883,12 @@ export class InventoryService {
       entityId: data.id,
       after: data,
       requestId,
-    });
-    return data;
+    })
+    return data
   }
 
   async listDocuments(kind: 'openings' | 'adjustments' | 'transfers', query: InventoryQueryDto) {
-    this.assertSort(query.sortBy, DOCUMENT_SORT);
+    this.assertSort(query.sortBy, DOCUMENT_SORT)
     const where = {
       ...(query.documentStatus ? { status: query.documentStatus } : {}),
       ...(query.createdFrom || query.createdTo
@@ -900,15 +899,15 @@ export class InventoryService {
             },
           }
         : {}),
-    };
+    }
     const delegate = {
       openings: this.prisma.inventoryOpening,
       adjustments: this.prisma.inventoryAdjustment,
       transfers: this.prisma.inventoryTransfer,
     }[kind] as unknown as {
-      findMany(args: unknown): Promise<unknown[]>;
-      count(args: unknown): Promise<number>;
-    };
+      findMany(args: unknown): Promise<unknown[]>
+      count(args: unknown): Promise<number>
+    }
     const [data, total] = (await this.prisma.$transaction([
       delegate.findMany({
         where,
@@ -918,14 +917,14 @@ export class InventoryService {
         take: query.pageSize,
       }) as never,
       delegate.count({ where }) as never,
-    ])) as [unknown[], number];
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])) as [unknown[], number]
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   private async location(id: string) {
-    const location = await this.prisma.inventoryLocation.findUnique({ where: { id } });
-    if (!location) throw new NotFoundException({ code: 'NOT_FOUND', message: '库存地点不存在' });
-    return location;
+    const location = await this.prisma.inventoryLocation.findUnique({ where: { id } })
+    if (!location) throw new NotFoundException({ code: 'NOT_FOUND', message: '库存地点不存在' })
+    return location
   }
 
   private async validateLocation(payload: CreateLocationDto, currentId?: string): Promise<void> {
@@ -934,28 +933,28 @@ export class InventoryService {
         throw new UnprocessableEntityException({
           code: 'LOCATION_PARENT_INVALID',
           message: '库存地点不能以自身为上级',
-        });
-      const parent = await this.location(payload.parentId);
+        })
+      const parent = await this.location(payload.parentId)
       if (parent.status !== MasterDataStatus.ACTIVE)
         throw new UnprocessableEntityException({
           code: 'LOCATION_PARENT_INVALID',
           message: '上级库存地点已停用',
-        });
+        })
     }
     if (payload.type === InventoryLocationType.EXTERNAL_WAREHOUSE && !payload.salesChannelId)
       throw new UnprocessableEntityException({
         code: 'SALES_CHANNEL_REQUIRED',
         message: '外部平台仓必须关联销售渠道',
-      });
+      })
     if (payload.salesChannelId) {
       const channel = await this.prisma.salesChannel.findUnique({
         where: { id: payload.salesChannelId },
-      });
+      })
       if (!channel || channel.status !== MasterDataStatus.ACTIVE)
         throw new UnprocessableEntityException({
           code: 'SALES_CHANNEL_INVALID',
           message: '销售渠道不存在或已停用',
-        });
+        })
       if (
         payload.type === InventoryLocationType.EXTERNAL_WAREHOUSE &&
         channel.inventoryMode !== ChannelInventoryMode.EXTERNAL_WAREHOUSE
@@ -963,14 +962,14 @@ export class InventoryService {
         throw new UnprocessableEntityException({
           code: 'CHANNEL_MODE_INVALID',
           message: '外部平台仓只能关联“外部平台仓”库存模式的销售渠道',
-        });
+        })
     }
   }
 
   private assertSort(sortBy: string, whitelist: readonly string[]): void {
     if (!whitelist.includes(sortBy))
-      throw new BadRequestException({ code: 'SORT_INVALID', message: '排序字段不在白名单中' });
+      throw new BadRequestException({ code: 'SORT_INVALID', message: '排序字段不在白名单中' })
   }
 }
 
-export { parseCsv };
+export { parseCsv }

@@ -1,37 +1,37 @@
-import { Download, Image as ImageIcon, Pencil, Plus, Power, RotateCcw, Search } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
-import { DataTable, type DataTableColumn } from '@/components/data-table/data-table';
-import { useToast } from '@/components/feedback/toast-provider';
-import { Button } from '@/components/ui/button';
-import { DateRangePickerInput } from '@/components/ui/date-picker';
-import { Input, Select } from '@/components/ui/field';
-import { ImagePreview } from '@/components/ui/image-preview';
-import { apiErrorMessage } from '@/lib/api-error';
-import { enumLabel } from '@/lib/enum-label';
-import { exportMasterData, type MasterRow } from './api';
-import { masterConfigs, type MasterConfig } from './config';
-import { DeactivateDialog } from './deactivate-dialog';
-import { MasterDataFormDialog } from './master-data-form-dialog';
-import { useListUrlState } from './use-list-url-state';
-import { useMasterList, useMasterMutations, useProductImageUrl } from './use-master-data';
+import { Download, Image as ImageIcon, Pencil, Plus, Power, RotateCcw, Search } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { Navigate, useParams } from 'react-router-dom'
+import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
+import { useToast } from '@/components/feedback/toast-provider'
+import { Button } from '@/components/ui/button'
+import { DateRangePickerInput } from '@/components/ui/date-picker'
+import { Input, Select } from '@/components/ui/field'
+import { ImagePreview } from '@/components/ui/image-preview'
+import { apiErrorMessage } from '@/lib/api-error'
+import { enumLabel } from '@/lib/enum-label'
+import { exportMasterData, type MasterRow } from './api'
+import { masterConfigs, type MasterConfig } from './config'
+import { DeactivateDialog } from './deactivate-dialog'
+import { MasterDataFormDialog } from './master-data-form-dialog'
+import { useListUrlState } from './use-list-url-state'
+import { useMasterList, useMasterMutations, useProductImageUrl } from './use-master-data'
 
 const inventoryModeLabels: Record<string, string> = {
   DIRECT_FROM_LOCATION: '指定仓库直发',
   EXTERNAL_WAREHOUSE: '外部平台仓',
   VIRTUAL_ALLOCATION: '虚拟渠道额度',
-};
-
-function inventoryModeLabel(value: unknown) {
-  if (value == null || value === '') return '—';
-  return inventoryModeLabels[String(value)] ?? enumLabel(value);
 }
 
-type ProductImageAsset = { fileAssetId: string; fileAsset?: { id: string; fileName: string } };
+function inventoryModeLabel(value: unknown) {
+  if (value == null || value === '') return '—'
+  return inventoryModeLabels[String(value)] ?? enumLabel(value)
+}
+
+type ProductImageAsset = { fileAssetId: string; fileAsset?: { id: string; fileName: string } }
 
 function ProductThumbnail({ row, large = false }: { row: MasterRow; large?: boolean }) {
-  const image = (row.images as ProductImageAsset[] | undefined)?.[0];
-  const content = useProductImageUrl(row.id, image?.fileAssetId);
+  const image = (row.images as ProductImageAsset[] | undefined)?.[0]
+  const content = useProductImageUrl(row.id, image?.fileAssetId)
   if (image?.fileAsset?.id && content.url) {
     return (
       <ImagePreview
@@ -39,7 +39,7 @@ function ProductThumbnail({ row, large = false }: { row: MasterRow; large?: bool
         className={`product-thumbnail ${large ? 'large' : ''}`}
         src={content.url}
       />
-    );
+    )
   }
   return (
     <div
@@ -48,7 +48,7 @@ function ProductThumbnail({ row, large = false }: { row: MasterRow; large?: bool
     >
       <ImageIcon size={large ? 30 : 18} />
     </div>
-  );
+  )
 }
 
 function detailFieldValue(
@@ -56,19 +56,19 @@ function detailFieldValue(
   field: MasterConfig['fields'][number],
   row: MasterRow,
 ) {
-  const relation = field.name.endsWith('Id') ? row[field.name.slice(0, -2)] : undefined;
+  const relation = field.name.endsWith('Id') ? row[field.name.slice(0, -2)] : undefined
   const value =
     relation && typeof relation === 'object' && 'name' in relation
       ? (relation as { name: string }).name
-      : row[field.name];
+      : row[field.name]
   if (config.resource === 'sales-channels' && field.name === 'inventoryMode')
-    return inventoryModeLabel(value);
+    return inventoryModeLabel(value)
   if (field.type === 'attributes' && value && typeof value === 'object') {
     return Object.entries(value as Record<string, unknown>)
       .map(([key, item]) => `${key}：${item}`)
-      .join('；');
+      .join('；')
   }
-  return value == null || value === '' ? '—' : String(value);
+  return value == null || value === '' ? '—' : String(value)
 }
 
 function MasterDataDetails({ config, row }: { config: MasterConfig; row: MasterRow }) {
@@ -88,23 +88,23 @@ function MasterDataDetails({ config, row }: { config: MasterConfig; row: MasterR
         </div>
       </dl>
     </div>
-  );
+  )
 }
 
 export function MasterDataPage() {
-  const { resource = '' } = useParams();
-  const config = masterConfigs[resource];
-  const { params, keyword, setKeyword, setParam, setDateRange } = useListUrlState();
-  const list = useMasterList(resource, params);
-  const mutations = useMasterMutations(resource);
-  const notify = useToast();
-  const [editing, setEditing] = useState<MasterRow>();
-  const [formOpen, setFormOpen] = useState(false);
-  const [statusChanging, setStatusChanging] = useState<MasterRow>();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const onSelectionChange = useCallback((ids: string[]) => setSelectedIds(ids), []);
+  const { resource = '' } = useParams()
+  const config = masterConfigs[resource]
+  const { params, keyword, setKeyword, setParam, setDateRange } = useListUrlState()
+  const list = useMasterList(resource, params)
+  const mutations = useMasterMutations(resource)
+  const notify = useToast()
+  const [editing, setEditing] = useState<MasterRow>()
+  const [formOpen, setFormOpen] = useState(false)
+  const [statusChanging, setStatusChanging] = useState<MasterRow>()
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const onSelectionChange = useCallback((ids: string[]) => setSelectedIds(ids), [])
 
-  if (!config) return <Navigate replace to="/master/categories" />;
+  if (!config) return <Navigate replace to="/master/categories" />
   const columns: DataTableColumn[] =
     config.resource === 'products'
       ? [
@@ -116,33 +116,33 @@ export function MasterDataPage() {
           },
           ...config.columns,
         ]
-      : config.columns;
+      : config.columns
 
   const save = async (payload: Record<string, unknown>) => {
-    if (editing) return mutations.update.mutateAsync({ id: editing.id, payload });
-    return mutations.create.mutateAsync(payload);
-  };
+    if (editing) return mutations.update.mutateAsync({ id: editing.id, payload })
+    return mutations.create.mutateAsync(payload)
+  }
 
   const changeStatus = async (row: MasterRow) => {
     try {
-      if (row.status === 'ACTIVE') await mutations.deactivate.mutateAsync(row.id);
-      else await mutations.update.mutateAsync({ id: row.id, payload: { status: 'ACTIVE' } });
-      notify(row.status === 'ACTIVE' ? '资料已停用' : '资料已启用', 'success');
-      setStatusChanging(undefined);
+      if (row.status === 'ACTIVE') await mutations.deactivate.mutateAsync(row.id)
+      else await mutations.update.mutateAsync({ id: row.id, payload: { status: 'ACTIVE' } })
+      notify(row.status === 'ACTIVE' ? '资料已停用' : '资料已启用', 'success')
+      setStatusChanging(undefined)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
 
   const bulkDeactivate = async () => {
     try {
-      for (const id of selectedIds) await mutations.deactivate.mutateAsync(id);
-      notify(`已停用 ${selectedIds.length} 条资料`, 'success');
-      setSelectedIds([]);
+      for (const id of selectedIds) await mutations.deactivate.mutateAsync(id)
+      notify(`已停用 ${selectedIds.length} 条资料`, 'success')
+      setSelectedIds([])
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
 
   return (
     <section className="page-section">
@@ -154,8 +154,8 @@ export function MasterDataPage() {
         </div>
         <Button
           onClick={() => {
-            setEditing(undefined);
-            setFormOpen(true);
+            setEditing(undefined)
+            setFormOpen(true)
           }}
         >
           <Plus size={17} /> 新增{config.title}
@@ -214,8 +214,8 @@ export function MasterDataPage() {
               <button
                 aria-label={`编辑 ${row.name}`}
                 onClick={() => {
-                  setEditing(row);
-                  setFormOpen(true);
+                  setEditing(row)
+                  setFormOpen(true)
                 }}
                 type="button"
               >
@@ -245,11 +245,11 @@ export function MasterDataPage() {
           onPageSizeChange={(size) => setParam('pageSize', String(size))}
           onSelectionChange={onSelectionChange}
           onSort={(key) => {
-            setParam('sortBy', key);
+            setParam('sortBy', key)
             setParam(
               'sortOrder',
               params.sortBy === key && params.sortOrder === 'asc' ? 'desc' : 'asc',
-            );
+            )
           }}
           rows={list.data?.data ?? []}
           renderDetail={(row) => <MasterDataDetails config={config} row={row} />}
@@ -261,8 +261,8 @@ export function MasterDataPage() {
       <MasterDataFormDialog
         config={config}
         onOpenChange={(open) => {
-          setFormOpen(open);
-          if (!open) setEditing(undefined);
+          setFormOpen(open)
+          if (!open) setEditing(undefined)
         }}
         onSave={save}
         open={formOpen}
@@ -274,11 +274,11 @@ export function MasterDataPage() {
         name={statusChanging?.name ?? ''}
         onConfirm={() => changeStatus(statusChanging!)}
         onOpenChange={(open) => {
-          if (!open) setStatusChanging(undefined);
+          if (!open) setStatusChanging(undefined)
         }}
         open={Boolean(statusChanging)}
         pending={mutations.deactivate.isPending || mutations.update.isPending}
       />
     </section>
-  );
+  )
 }

@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ListParams } from '@/features/master-data/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { ListParams } from '@/features/master-data/api'
 import {
   createPurchaseOrder,
   createPurchasePrice,
@@ -9,18 +9,18 @@ import {
   transitionPurchase,
   updatePurchaseOrder,
   type PurchaseView,
-} from './api';
+} from './api'
 
 const purchaseKeys = {
   all: ['purchase'] as const,
   list: (view: PurchaseView, params: ListParams) => ['purchase', view, params] as const,
-};
+}
 
 export function usePurchaseList(view: PurchaseView, params: ListParams) {
   return useQuery({
     queryKey: purchaseKeys.list(view, params),
     queryFn: () => listPurchase(view, params),
-  });
+  })
 }
 
 export function usePurchaseOptions(view: 'orders' | 'receipts') {
@@ -29,17 +29,17 @@ export function usePurchaseOptions(view: 'orders' | 'receipts') {
     pageSize: 100,
     sortBy: view === 'orders' ? 'orderDate' : 'occurredAt',
     sortOrder: 'desc',
-  };
+  }
   return useQuery({
     queryKey: purchaseKeys.list(view, params),
     queryFn: () => listPurchase(view, params),
     staleTime: 10_000,
-  });
+  })
 }
 
 export function usePurchaseMutations() {
-  const client = useQueryClient();
-  const refresh = () => client.invalidateQueries({ queryKey: purchaseKeys.all });
+  const client = useQueryClient()
+  const refresh = () => client.invalidateQueries({ queryKey: purchaseKeys.all })
   return {
     price: useMutation({ mutationFn: createPurchasePrice, onSuccess: refresh }),
     order: useMutation({ mutationFn: createPurchaseOrder, onSuccess: refresh }),
@@ -52,11 +52,11 @@ export function usePurchaseMutations() {
     returned: useMutation({ mutationFn: createPurchaseReturn, onSuccess: refresh }),
     transition: useMutation({
       mutationFn: (input: {
-        kind: 'orders' | 'receipts' | 'returns';
-        id: string;
-        action: 'confirm' | 'cancel' | 'post';
+        kind: 'orders' | 'receipts' | 'returns'
+        id: string
+        action: 'confirm' | 'cancel' | 'post'
       }) => transitionPurchase(input.kind, input.id, input.action),
       onSuccess: refresh,
     }),
-  };
+  }
 }

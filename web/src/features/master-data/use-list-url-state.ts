@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import type { ListParams } from './api';
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import type { ListParams } from './api'
 
-const PAGE_SIZES = [10, 20, 50, 100];
+const PAGE_SIZES = [10, 20, 50, 100]
 
 export function useListUrlState() {
-  const [search, setSearch] = useSearchParams();
-  const [keyword, setKeyword] = useState(search.get('keyword') ?? '');
-  const pageSizeValue = Number(search.get('pageSize') ?? 20);
+  const [search, setSearch] = useSearchParams()
+  const [keyword, setKeyword] = useState(search.get('keyword') ?? '')
+  const pageSizeValue = Number(search.get('pageSize') ?? 20)
   const params = useMemo<ListParams>(
     () => ({
       page: Math.max(1, Number(search.get('page') ?? 1)),
@@ -49,53 +49,53 @@ export function useListUrlState() {
       locked: search.get('locked') || undefined,
     }),
     [pageSizeValue, search],
-  );
+  )
 
   const setParam = (key: string, value?: string, resetPage = true) => {
     setSearch(
       (current) => {
-        const next = new URLSearchParams(current);
-        if (value) next.set(key, value);
-        else next.delete(key);
-        if (resetPage && key !== 'page') next.set('page', '1');
-        return next;
+        const next = new URLSearchParams(current)
+        if (value) next.set(key, value)
+        else next.delete(key)
+        if (resetPage && key !== 'page') next.set('page', '1')
+        return next
       },
       { replace: true },
-    );
-  };
+    )
+  }
 
   const setDateRange = (from?: string, to?: string) => {
     setSearch(
       (current) => {
-        const next = new URLSearchParams(current);
-        if (from) next.set('createdFrom', `${from}T00:00:00.000Z`);
-        else next.delete('createdFrom');
-        if (to) next.set('createdTo', `${to}T00:00:00.000Z`);
-        else next.delete('createdTo');
-        next.set('page', '1');
-        return next;
+        const next = new URLSearchParams(current)
+        if (from) next.set('createdFrom', `${from}T00:00:00.000Z`)
+        else next.delete('createdFrom')
+        if (to) next.set('createdTo', `${to}T00:00:00.000Z`)
+        else next.delete('createdTo')
+        next.set('page', '1')
+        return next
       },
       { replace: true },
-    );
-  };
+    )
+  }
 
   const clearParams = (keys: string[]) => {
-    if (keys.includes('keyword')) setKeyword('');
+    if (keys.includes('keyword')) setKeyword('')
     setSearch(
       (current) => {
-        const next = new URLSearchParams(current);
-        keys.forEach((key) => next.delete(key));
-        next.set('page', '1');
-        return next;
+        const next = new URLSearchParams(current)
+        keys.forEach((key) => next.delete(key))
+        next.set('page', '1')
+        return next
       },
       { replace: true },
-    );
-  };
+    )
+  }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setParam('keyword', keyword || undefined), 300);
-    return () => window.clearTimeout(timer);
-  }, [keyword]);
+    const timer = window.setTimeout(() => setParam('keyword', keyword || undefined), 300)
+    return () => window.clearTimeout(timer)
+  }, [keyword])
 
-  return { params, keyword, setKeyword, setParam, setDateRange, clearParams };
+  return { params, keyword, setKeyword, setParam, setDateRange, clearParams }
 }

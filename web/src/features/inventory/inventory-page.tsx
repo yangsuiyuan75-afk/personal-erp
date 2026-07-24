@@ -9,29 +9,29 @@ import {
   RotateCcw,
   Search,
   Warehouse,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { DataTable, type DataTableColumn } from '@/components/data-table/data-table';
-import { Button } from '@/components/ui/button';
-import { DateRangePickerInput } from '@/components/ui/date-picker';
-import { Input, Select } from '@/components/ui/field';
-import { apiErrorMessage } from '@/lib/api-error';
-import { enumLabel } from '@/lib/enum-label';
-import type { MasterRow } from '@/features/master-data/api';
-import { useListUrlState } from '@/features/master-data/use-list-url-state';
-import { useMasterOptions } from '@/features/master-data/use-master-data';
-import type { InventoryBalanceRow } from './api';
-import { InventoryDialogs, type InventoryDialogKind } from './inventory-dialogs';
-import { useInventoryList, useSkuInventory } from './use-inventory';
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
+import { Button } from '@/components/ui/button'
+import { DateRangePickerInput } from '@/components/ui/date-picker'
+import { Input, Select } from '@/components/ui/field'
+import { apiErrorMessage } from '@/lib/api-error'
+import { enumLabel } from '@/lib/enum-label'
+import type { MasterRow } from '@/features/master-data/api'
+import { useListUrlState } from '@/features/master-data/use-list-url-state'
+import { useMasterOptions } from '@/features/master-data/use-master-data'
+import type { InventoryBalanceRow } from './api'
+import { InventoryDialogs, type InventoryDialogKind } from './inventory-dialogs'
+import { useInventoryList, useSkuInventory } from './use-inventory'
 
-type InventoryView = 'balances' | 'transactions' | 'locations' | 'batches';
+type InventoryView = 'balances' | 'transactions' | 'locations' | 'batches'
 
 const views: Array<{ id: InventoryView; label: string; icon: typeof Boxes }> = [
   { id: 'balances', label: '库存余额', icon: Boxes },
   { id: 'transactions', label: '库存流水', icon: ClipboardList },
   { id: 'locations', label: '库存地点', icon: Warehouse },
   { id: 'batches', label: '批次追溯', icon: PackageCheck },
-];
+]
 
 const viewSort: Record<InventoryView, { allowed: string[]; fallback: string }> = {
   balances: {
@@ -47,7 +47,7 @@ const viewSort: Record<InventoryView, { allowed: string[]; fallback: string }> =
     allowed: ['receivedAt', 'batchNo', 'remainingQuantity'],
     fallback: 'receivedAt',
   },
-};
+}
 
 const statusLabels: Record<string, string> = {
   AVAILABLE: '可售',
@@ -55,7 +55,7 @@ const statusLabels: Record<string, string> = {
   DEFECTIVE: '不良品',
   SUPPLIER_CLAIM: '供应商索赔',
   SCRAPPED: '已报废',
-};
+}
 
 const transactionLabels: Record<string, string> = {
   OPENING_IN: '期初入库',
@@ -66,17 +66,17 @@ const transactionLabels: Record<string, string> = {
   PURCHASE_RETURN: '采购退货',
   SALES_ISSUE: '销售出库',
   SALES_RETURN_QC: '销售退货待质检',
-};
+}
 
 function money(value: unknown): string {
   return `¥${Number(value ?? 0).toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  })}`
 }
 
 function quantity(value: unknown): string {
-  return Number(value ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 4 });
+  return Number(value ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 4 })
 }
 
 function columnsFor(view: InventoryView): DataTableColumn[] {
@@ -110,7 +110,7 @@ function columnsFor(view: InventoryView): DataTableColumn[] {
       { key: 'averageCost', label: '移动均价', render: (row) => money(row.averageCost) },
       { key: 'inventoryValue', label: '库存金额', render: (row) => money(row.inventoryValue) },
       { key: 'updatedAt', label: '更新时间' },
-    ];
+    ]
   if (view === 'transactions')
     return [
       { key: 'transactionNo', label: '流水号' },
@@ -125,7 +125,7 @@ function columnsFor(view: InventoryView): DataTableColumn[] {
       { key: '_count.lines', label: '明细行', sortable: false },
       { key: 'occurredAt', label: '业务时间' },
       { key: 'postedAt', label: '过账时间' },
-    ];
+    ]
   if (view === 'locations')
     return [
       { key: 'code', label: '地点代码' },
@@ -141,7 +141,7 @@ function columnsFor(view: InventoryView): DataTableColumn[] {
       },
       { key: 'status', label: '状态', sortable: false },
       { key: 'updatedAt', label: '更新时间' },
-    ];
+    ]
   return [
     { key: 'batchNo', label: '批次号' },
     { key: 'sku.code', label: 'SKU', sortable: false },
@@ -151,15 +151,15 @@ function columnsFor(view: InventoryView): DataTableColumn[] {
     { key: 'remainingQuantity', label: '剩余数量' },
     { key: 'unitCost', label: '批次成本', render: (row) => money(row.unitCost), sortable: false },
     { key: 'receivedAt', label: '入库时间' },
-  ];
+  ]
 }
 
 export function InventoryPage() {
-  const { params, keyword, setKeyword, setParam, setDateRange, clearParams } = useListUrlState();
-  const rawView = new URLSearchParams(window.location.search).get('view');
+  const { params, keyword, setKeyword, setParam, setDateRange, clearParams } = useListUrlState()
+  const rawView = new URLSearchParams(window.location.search).get('view')
   const view: InventoryView = views.some((item) => item.id === rawView)
     ? (rawView as InventoryView)
-    : 'balances';
+    : 'balances'
   const normalizedParams = useMemo(
     () => ({
       ...params,
@@ -168,20 +168,20 @@ export function InventoryPage() {
         : viewSort[view].fallback,
     }),
     [params, view],
-  );
-  const list = useInventoryList(view, normalizedParams);
+  )
+  const list = useInventoryList(view, normalizedParams)
   const locationOptions = useInventoryList('locations', {
     page: 1,
     pageSize: 100,
     status: 'ACTIVE',
     sortBy: 'name',
     sortOrder: 'asc',
-  });
-  const categoryOptions = useMasterOptions('categories');
-  const [selected, setSelected] = useState<InventoryBalanceRow>();
-  const [dialog, setDialog] = useState<InventoryDialogKind>();
-  const selectedInventory = useSkuInventory(selected?.skuId);
-  const rows = list.data?.data ?? [];
+  })
+  const categoryOptions = useMasterOptions('categories')
+  const [selected, setSelected] = useState<InventoryBalanceRow>()
+  const [dialog, setDialog] = useState<InventoryDialogKind>()
+  const selectedInventory = useSkuInventory(selected?.skuId)
+  const rows = list.data?.data ?? []
 
   return (
     <section className="page-section inventory-page inventory-center-page">
@@ -298,8 +298,8 @@ export function InventoryPage() {
                   <div>
                     <button
                       onClick={(event) => {
-                        event.currentTarget.closest('details')?.removeAttribute('open');
-                        setDialog('opening');
+                        event.currentTarget.closest('details')?.removeAttribute('open')
+                        setDialog('opening')
                       }}
                       type="button"
                     >
@@ -307,8 +307,8 @@ export function InventoryPage() {
                     </button>
                     <button
                       onClick={(event) => {
-                        event.currentTarget.closest('details')?.removeAttribute('open');
-                        setDialog('adjustment');
+                        event.currentTarget.closest('details')?.removeAttribute('open')
+                        setDialog('adjustment')
                       }}
                       type="button"
                     >
@@ -353,13 +353,13 @@ export function InventoryPage() {
                 view === 'balances' ? (row) => setSelected(row as InventoryBalanceRow) : undefined
               }
               onSort={(key) => {
-                setParam('sortBy', key);
+                setParam('sortBy', key)
                 setParam(
                   'sortOrder',
                   normalizedParams.sortBy === key && normalizedParams.sortOrder === 'asc'
                     ? 'desc'
                     : 'asc',
-                );
+                )
               }}
               rows={rows}
               sortBy={normalizedParams.sortBy}
@@ -379,7 +379,7 @@ export function InventoryPage() {
       </div>
       <InventoryDialogs active={dialog} onOpenChange={setDialog} />
     </section>
-  );
+  )
 }
 
 function InventoryContextRail({
@@ -388,10 +388,10 @@ function InventoryContextRail({
   batchRows,
   onTransfer,
 }: {
-  selected?: InventoryBalanceRow;
-  balanceRows: MasterRow[];
-  batchRows: MasterRow[];
-  onTransfer: () => void;
+  selected?: InventoryBalanceRow
+  balanceRows: MasterRow[]
+  batchRows: MasterRow[]
+  onTransfer: () => void
 }) {
   if (!selected)
     return (
@@ -400,8 +400,8 @@ function InventoryContextRail({
         <strong>选择一条库存余额</strong>
         <p>这里会显示该 SKU 的地点分布、移动平均成本和最早可用批次。</p>
       </aside>
-    );
-  const total = balanceRows.reduce((sum, row) => sum + Number(row.onHandQuantity ?? 0), 0);
+    )
+  const total = balanceRows.reduce((sum, row) => sum + Number(row.onHandQuantity ?? 0), 0)
   return (
     <aside className="inventory-context">
       <header>
@@ -426,7 +426,7 @@ function InventoryContextRail({
         <h3>库存地点分布</h3>
         <div className="location-distribution">
           {balanceRows.map((row) => {
-            const current = Number(row.onHandQuantity ?? 0);
+            const current = Number(row.onHandQuantity ?? 0)
             return (
               <article key={row.id}>
                 <div>
@@ -437,7 +437,7 @@ function InventoryContextRail({
                 </div>
                 <i style={{ width: `${Math.max(4, total ? (current / total) * 100 : 0)}%` }} />
               </article>
-            );
+            )
           })}
         </div>
       </section>
@@ -473,5 +473,5 @@ function InventoryContextRail({
         ) : null}
       </section>
     </aside>
-  );
+  )
 }

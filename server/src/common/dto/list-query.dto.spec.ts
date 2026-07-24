@@ -1,4 +1,4 @@
-import { paginationMeta } from './list-query.dto';
+import { paginationMeta } from './list-query.dto'
 
 describe('paginationMeta', () => {
   it('returns stable empty-list metadata', () => {
@@ -9,14 +9,14 @@ describe('paginationMeta', () => {
       totalPages: 0,
       hasPreviousPage: false,
       hasNextPage: false,
-    });
-  });
+    })
+  })
 
   it('reports both directions on a middle page', () => {
     expect(paginationMeta(2, 20, 45)).toMatchObject({
       totalPages: 3,
       hasPreviousPage: true,
       hasNextPage: true,
-    });
-  });
-});
+    })
+  })
+})

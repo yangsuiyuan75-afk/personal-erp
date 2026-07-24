@@ -1,18 +1,18 @@
-import { Dialog } from '@base-ui/react/dialog';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Download, FileSpreadsheet, X } from 'lucide-react';
-import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { DatePickerInput, today } from '@/components/ui/date-picker';
-import { Field, Input, Select, Textarea } from '@/components/ui/field';
-import { useToast } from '@/components/feedback/toast-provider';
-import { apiErrorMessage } from '@/lib/api-error';
-import { useMasterOptions } from '@/features/master-data/use-master-data';
-import type { MasterRow } from '@/features/master-data/api';
-import { downloadOpeningTemplate, type OpeningPreview } from './api';
-import { useInventoryList, useInventoryMutations } from './use-inventory';
+import { Dialog } from '@base-ui/react/dialog'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Download, FileSpreadsheet, X } from 'lucide-react'
+import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
+import { DatePickerInput, today } from '@/components/ui/date-picker'
+import { Field, Input, Select, Textarea } from '@/components/ui/field'
+import { useToast } from '@/components/feedback/toast-provider'
+import { apiErrorMessage } from '@/lib/api-error'
+import { useMasterOptions } from '@/features/master-data/use-master-data'
+import type { MasterRow } from '@/features/master-data/api'
+import { downloadOpeningTemplate, type OpeningPreview } from './api'
+import { useInventoryList, useInventoryMutations } from './use-inventory'
 
 function DialogShell({
   open,
@@ -21,10 +21,10 @@ function DialogShell({
   description,
   children,
 }: PropsWithChildren<{
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
 }>) {
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
@@ -46,7 +46,7 @@ function DialogShell({
         </Dialog.Viewport>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }
 
 function Options({ rows }: { rows?: MasterRow[] }) {
@@ -54,7 +54,7 @@ function Options({ rows }: { rows?: MasterRow[] }) {
     <option key={row.id} value={row.id}>
       {row.code} · {row.name}
     </option>
-  ));
+  ))
 }
 
 const locationSchema = z.object({
@@ -62,38 +62,38 @@ const locationSchema = z.object({
   name: z.string().trim().min(1, '请输入地点名称'),
   type: z.string().min(1, '请选择地点类型'),
   salesChannelId: z.string().optional(),
-});
+})
 
 export function LocationDialog({
   open,
   onOpenChange,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const notify = useToast();
-  const mutations = useInventoryMutations();
-  const channels = useMasterOptions('sales-channels');
+  const notify = useToast()
+  const mutations = useInventoryMutations()
+  const channels = useMasterOptions('sales-channels')
   const form = useForm<z.infer<typeof locationSchema>>({
     resolver: zodResolver(locationSchema),
     defaultValues: { code: '', name: '', type: 'PHYSICAL_WAREHOUSE', salesChannelId: '' },
-  });
+  })
   useEffect(() => {
-    if (!open) form.reset();
-  }, [form, open]);
+    if (!open) form.reset()
+  }, [form, open])
   const submit = async (values: z.infer<typeof locationSchema>) => {
     try {
       await mutations.createLocation.mutateAsync({
         ...values,
         salesChannelId: values.salesChannelId || undefined,
         isLeaf: true,
-      });
-      notify('库存地点已创建', 'success');
-      onOpenChange(false);
+      })
+      notify('库存地点已创建', 'success')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <DialogShell
       description="平台仓必须关联“外部平台仓”库存模式的销售渠道。"
@@ -129,15 +129,15 @@ export function LocationDialog({
         <DialogActions pending={mutations.createLocation.isPending} />
       </form>
     </DialogShell>
-  );
+  )
 }
 
 function DialogActions({
   pending,
   submitLabel = '保存并继续',
 }: {
-  pending: boolean;
-  submitLabel?: string;
+  pending: boolean
+  submitLabel?: string
 }) {
   return (
     <footer className="dialog-footer">
@@ -146,62 +146,62 @@ function DialogActions({
         {pending ? '正在处理…' : submitLabel}
       </Button>
     </footer>
-  );
+  )
 }
 
 const openingSchema = z.object({
   occurredAt: z.string().min(1, '请选择业务时间'),
   remark: z.string().max(1000).optional(),
-});
+})
 
 export function OpeningDialog({
   open,
   onOpenChange,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const notify = useToast();
-  const mutations = useInventoryMutations();
-  const [preview, setPreview] = useState<OpeningPreview>();
-  const [fileName, setFileName] = useState('');
+  const notify = useToast()
+  const mutations = useInventoryMutations()
+  const [preview, setPreview] = useState<OpeningPreview>()
+  const [fileName, setFileName] = useState('')
   const form = useForm<z.infer<typeof openingSchema>>({
     resolver: zodResolver(openingSchema),
     defaultValues: { occurredAt: today(), remark: '' },
-  });
+  })
   useEffect(() => {
     if (!open) {
-      setPreview(undefined);
-      setFileName('');
-      form.reset({ occurredAt: today(), remark: '' });
+      setPreview(undefined)
+      setFileName('')
+      form.reset({ occurredAt: today(), remark: '' })
     }
-  }, [form, open]);
+  }, [form, open])
 
   const chooseFile = async (file?: File) => {
-    if (!file) return;
-    setFileName(file.name);
+    if (!file) return
+    setFileName(file.name)
     try {
-      setPreview(await mutations.previewOpening.mutateAsync(file));
+      setPreview(await mutations.previewOpening.mutateAsync(file))
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   const submit = async (values: z.infer<typeof openingSchema>) => {
-    if (!preview?.valid) return;
+    if (!preview?.valid) return
     try {
       const opening = await mutations.createOpening.mutateAsync({
         importKey: `opening-${crypto.randomUUID()}`,
         occurredAt: new Date(values.occurredAt).toISOString(),
         remark: values.remark,
         rows: preview.rows,
-      });
-      await mutations.post.mutateAsync({ kind: 'openings', id: opening.id });
-      notify(`期初库存 ${opening.openingNo} 已确认入账`, 'success');
-      onOpenChange(false);
+      })
+      await mutations.post.mutateAsync({ kind: 'openings', id: opening.id })
+      notify(`期初库存 ${opening.openingNo} 已确认入账`, 'success')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <DialogShell
       description="上传后先逐行校验；确认后生成不可编辑的期初入库库存流水。"
@@ -244,7 +244,7 @@ export function OpeningDialog({
         />
       </form>
     </DialogShell>
-  );
+  )
 }
 
 function OpeningPreviewPanel({ preview }: { preview: OpeningPreview }) {
@@ -269,7 +269,7 @@ function OpeningPreviewPanel({ preview }: { preview: OpeningPreview }) {
         ))}
       </div>
     </section>
-  );
+  )
 }
 
 const adjustmentSchema = z.object({
@@ -281,7 +281,7 @@ const adjustmentSchema = z.object({
   unitCost: z.string().optional(),
   occurredAt: z.string().min(1),
   reason: z.string().trim().min(2, '请填写调整原因'),
-});
+})
 
 const transferSchema = z.object({
   fromLocationId: z.string().uuid('请选择调出地点'),
@@ -291,18 +291,18 @@ const transferSchema = z.object({
   quantity: z.string().regex(/^\d+(\.\d{1,4})?$/, '数量格式无效'),
   occurredAt: z.string().min(1),
   remark: z.string().max(1000).optional(),
-});
+})
 
 function useInventoryOptions() {
-  const skus = useMasterOptions('skus');
+  const skus = useMasterOptions('skus')
   const locations = useInventoryList('locations', {
     page: 1,
     pageSize: 100,
     sortBy: 'code',
     sortOrder: 'asc',
     status: 'ACTIVE',
-  });
-  return { skus: skus.data?.data, locations: locations.data?.data };
+  })
+  return { skus: skus.data?.data, locations: locations.data?.data }
 }
 
 function StockStatusOptions() {
@@ -314,19 +314,19 @@ function StockStatusOptions() {
       <option value="SUPPLIER_CLAIM">供应商索赔</option>
       <option value="SCRAPPED">已报废</option>
     </>
-  );
+  )
 }
 
 export function AdjustmentDialog({
   open,
   onOpenChange,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const notify = useToast();
-  const mutations = useInventoryMutations();
-  const options = useInventoryOptions();
+  const notify = useToast()
+  const mutations = useInventoryMutations()
+  const options = useInventoryOptions()
   const form = useForm<z.infer<typeof adjustmentSchema>>({
     resolver: zodResolver(adjustmentSchema),
     defaultValues: {
@@ -339,8 +339,8 @@ export function AdjustmentDialog({
       occurredAt: today(),
       reason: '',
     },
-  });
-  const direction = form.watch('direction');
+  })
+  const direction = form.watch('direction')
   const submit = async (values: z.infer<typeof adjustmentSchema>) => {
     try {
       const adjustment = await mutations.createAdjustment.mutateAsync({
@@ -356,15 +356,15 @@ export function AdjustmentDialog({
             unitCost: values.direction === 'IN' ? values.unitCost : undefined,
           },
         ],
-      });
-      await mutations.post.mutateAsync({ kind: 'adjustments', id: adjustment.id });
-      notify('库存调整已过账', 'success');
-      form.reset();
-      onOpenChange(false);
+      })
+      await mutations.post.mutateAsync({ kind: 'adjustments', id: adjustment.id })
+      notify('库存调整已过账', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <DialogShell
       description="调整必须填写原因；调减使用当前移动平均成本并执行批次 FIFO 分配。"
@@ -423,19 +423,19 @@ export function AdjustmentDialog({
         />
       </form>
     </DialogShell>
-  );
+  )
 }
 
 export function TransferDialog({
   open,
   onOpenChange,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const notify = useToast();
-  const mutations = useInventoryMutations();
-  const options = useInventoryOptions();
+  const notify = useToast()
+  const mutations = useInventoryMutations()
+  const options = useInventoryOptions()
   const form = useForm<z.infer<typeof transferSchema>>({
     resolver: zodResolver(transferSchema),
     defaultValues: {
@@ -447,7 +447,7 @@ export function TransferDialog({
       occurredAt: today(),
       remark: '',
     },
-  });
+  })
   const submit = async (values: z.infer<typeof transferSchema>) => {
     try {
       const transfer = await mutations.createTransfer.mutateAsync({
@@ -462,15 +462,15 @@ export function TransferDialog({
             quantity: values.quantity,
           },
         ],
-      });
-      await mutations.post.mutateAsync({ kind: 'transfers', id: transfer.id });
-      notify('库存调拨已过账', 'success');
-      form.reset();
-      onOpenChange(false);
+      })
+      await mutations.post.mutateAsync({ kind: 'transfers', id: transfer.id })
+      notify('库存调拨已过账', 'success')
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <DialogShell
       description="平台仓入仓使用真实库存调拨，调出与调入在同一事务完成。"
@@ -524,17 +524,17 @@ export function TransferDialog({
         />
       </form>
     </DialogShell>
-  );
+  )
 }
 
-export type InventoryDialogKind = 'location' | 'opening' | 'adjustment' | 'transfer';
+export type InventoryDialogKind = 'location' | 'opening' | 'adjustment' | 'transfer'
 
 export function InventoryDialogs({
   active,
   onOpenChange,
 }: {
-  active?: InventoryDialogKind;
-  onOpenChange: (kind?: InventoryDialogKind) => void;
+  active?: InventoryDialogKind
+  onOpenChange: (kind?: InventoryDialogKind) => void
 }) {
   const dialogs: Array<[InventoryDialogKind, ReactNode]> = [
     [
@@ -569,6 +569,6 @@ export function InventoryDialogs({
         open={active === 'transfer'}
       />,
     ],
-  ];
-  return <>{dialogs.find(([kind]) => kind === active)?.[1]}</>;
+  ]
+  return <>{dialogs.find(([kind]) => kind === active)?.[1]}</>
 }

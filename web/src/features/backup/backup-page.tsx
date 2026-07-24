@@ -1,4 +1,4 @@
-import { Dialog } from '@base-ui/react/dialog';
+import { Dialog } from '@base-ui/react/dialog'
 import {
   CalendarClock,
   CheckCircle2,
@@ -14,19 +14,19 @@ import {
   Search,
   ShieldAlert,
   X,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { DataTable, type DataTableColumn } from '@/components/data-table/data-table';
-import { useToast } from '@/components/feedback/toast-provider';
-import { Button } from '@/components/ui/button';
-import { Field, Input, Select } from '@/components/ui/field';
-import type { ListParams } from '@/features/master-data/api';
-import { useListUrlState } from '@/features/master-data/use-list-url-state';
-import { apiErrorMessage } from '@/lib/api-error';
-import { formatDate } from '@/lib/date';
-import { enumLabel } from '@/lib/enum-label';
-import { downloadBackup, exportBackups, type BackupHistory, type BackupSystemStatus } from './api';
-import { useBackupList, useBackupMutations, useBackupStatus } from './use-backups';
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
+import { useToast } from '@/components/feedback/toast-provider'
+import { Button } from '@/components/ui/button'
+import { Field, Input, Select } from '@/components/ui/field'
+import type { ListParams } from '@/features/master-data/api'
+import { useListUrlState } from '@/features/master-data/use-list-url-state'
+import { apiErrorMessage } from '@/lib/api-error'
+import { formatDate } from '@/lib/date'
+import { enumLabel } from '@/lib/enum-label'
+import { downloadBackup, exportBackups, type BackupHistory, type BackupSystemStatus } from './api'
+import { useBackupList, useBackupMutations, useBackupStatus } from './use-backups'
 
 const statusText: Record<string, string> = {
   CREATING: '正在生成',
@@ -34,7 +34,7 @@ const statusText: Record<string, string> = {
   VERIFIED: '校验通过',
   FAILED: '失败',
   EXPIRED: '已按策略清理',
-};
+}
 
 const triggerText: Record<string, string> = {
   MANUAL: '手工备份',
@@ -42,14 +42,14 @@ const triggerText: Record<string, string> = {
   OPERATION_THRESHOLD: '业务量触发',
   PRE_RESTORE: '恢复前保护',
   BOOTSTRAP_IMPORT: 'Bootstrap 导入',
-};
+}
 
 function formatBytes(value: string | number | undefined): string {
-  const size = Number(value ?? 0);
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 ** 2) return `${(size / 1024).toFixed(1)} KB`;
-  if (size < 1024 ** 3) return `${(size / 1024 ** 2).toFixed(1)} MB`;
-  return `${(size / 1024 ** 3).toFixed(2)} GB`;
+  const size = Number(value ?? 0)
+  if (size < 1024) return `${size} B`
+  if (size < 1024 ** 2) return `${(size / 1024).toFixed(1)} KB`
+  if (size < 1024 ** 3) return `${(size / 1024 ** 2).toFixed(1)} MB`
+  return `${(size / 1024 ** 3).toFixed(2)} GB`
 }
 
 function BackupStatusBadge({ status }: { status: string }) {
@@ -57,7 +57,7 @@ function BackupStatusBadge({ status }: { status: string }) {
     <span className={`business-status backup-status-${status.toLowerCase()}`}>
       {statusText[status] ?? enumLabel(status)}
     </span>
-  );
+  )
 }
 
 function columns(): DataTableColumn[] {
@@ -98,7 +98,7 @@ function columns(): DataTableColumn[] {
       render: (row) => (row.locked ? '永久保留' : '按策略管理'),
     },
     { key: 'completedAt', label: '完成时间' },
-  ];
+  ]
 }
 
 function BackupContext({ backup }: { backup?: BackupHistory }) {
@@ -108,9 +108,9 @@ function BackupContext({ backup }: { backup?: BackupHistory }) {
         <DatabaseBackup size={30} />
         <p>选择一个恢复点，查看 Manifest、校验值和保护状态。</p>
       </aside>
-    );
+    )
   }
-  const counts = backup.manifest?.recordCounts ?? {};
+  const counts = backup.manifest?.recordCounts ?? {}
   return (
     <aside className="inventory-context backup-context">
       <header>
@@ -170,7 +170,7 @@ function BackupContext({ backup }: { backup?: BackupHistory }) {
         </section>
       ) : null}
     </aside>
-  );
+  )
 }
 
 function RestoreDialog({
@@ -178,31 +178,31 @@ function RestoreDialog({
   open,
   onOpenChange,
 }: {
-  backup?: BackupHistory;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  backup?: BackupHistory
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const mutations = useBackupMutations();
-  const notify = useToast();
-  const [password, setPassword] = useState('');
-  const [confirmPhrase, setConfirmPhrase] = useState('');
-  if (!backup) return null;
-  const expected = `RESTORE ${backup.backupNo}`;
+  const mutations = useBackupMutations()
+  const notify = useToast()
+  const [password, setPassword] = useState('')
+  const [confirmPhrase, setConfirmPhrase] = useState('')
+  if (!backup) return null
+  const expected = `RESTORE ${backup.backupNo}`
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     try {
       const result = await mutations.restore.mutateAsync({
         id: backup.id,
         password,
         confirmPhrase,
-      });
-      notify(`已恢复 ${result.backupNo}，恢复前保护点为 ${result.preRestoreBackupNo}`, 'success');
-      onOpenChange(false);
-      window.setTimeout(() => window.location.reload(), 900);
+      })
+      notify(`已恢复 ${result.backupNo}，恢复前保护点为 ${result.preRestoreBackupNo}`, 'success')
+      onOpenChange(false)
+      window.setTimeout(() => window.location.reload(), 900)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
       <Dialog.Portal>
@@ -259,11 +259,11 @@ function RestoreDialog({
         </Dialog.Viewport>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }
 
 function StatusCards({ status }: { status?: BackupSystemStatus }) {
-  const latest = status?.latest;
+  const latest = status?.latest
   return (
     <section className="inventory-kpis backup-kpis" aria-label="备份概况">
       <article>
@@ -285,11 +285,11 @@ function StatusCards({ status }: { status?: BackupSystemStatus }) {
         <small>启动超过 {status?.autoAfterHours ?? 24} 小时且有变化时自动补偿</small>
       </article>
     </section>
-  );
+  )
 }
 
 export function BackupPage() {
-  const { params, keyword, setKeyword, setParam } = useListUrlState();
+  const { params, keyword, setKeyword, setParam } = useListUrlState()
   const allowedSort = [
     'backupNo',
     'status',
@@ -299,29 +299,29 @@ export function BackupPage() {
     'completedAt',
     'verifiedAt',
     'createdAt',
-  ];
+  ]
   const listParams: ListParams = {
     ...params,
     sortBy: allowedSort.includes(params.sortBy) ? params.sortBy : 'completedAt',
-  };
-  const list = useBackupList(listParams);
-  const status = useBackupStatus();
-  const mutations = useBackupMutations();
-  const notify = useToast();
-  const rows = (list.data?.data ?? []) as BackupHistory[];
-  const [activeId, setActiveId] = useState<string>();
-  const [restoreId, setRestoreId] = useState<string>();
-  const active = useMemo(() => rows.find((item) => item.id === activeId), [activeId, rows]);
-  const restoreTarget = rows.find((item) => item.id === restoreId);
+  }
+  const list = useBackupList(listParams)
+  const status = useBackupStatus()
+  const mutations = useBackupMutations()
+  const notify = useToast()
+  const rows = (list.data?.data ?? []) as BackupHistory[]
+  const [activeId, setActiveId] = useState<string>()
+  const [restoreId, setRestoreId] = useState<string>()
+  const active = useMemo(() => rows.find((item) => item.id === activeId), [activeId, rows])
+  const restoreTarget = rows.find((item) => item.id === restoreId)
 
   const task = async (action: () => Promise<unknown>, success: string) => {
     try {
-      await action();
-      notify(success, 'success');
+      await action()
+      notify(success, 'success')
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
 
   return (
     <section className="page-section inventory-page backup-page">
@@ -397,16 +397,16 @@ export function BackupPage() {
           <DataTable
             activeRowId={activeId}
             actions={(row) => {
-              const backup = row as BackupHistory;
-              const usable = backup.status === 'VERIFIED';
+              const backup = row as BackupHistory
+              const usable = backup.status === 'VERIFIED'
               return (
                 <>
                   {backup.status !== 'EXPIRED' ? (
                     <button
                       aria-label={`下载 ${backup.backupNo}`}
                       onClick={(event) => {
-                        event.stopPropagation();
-                        void task(() => downloadBackup(backup), '备份下载已开始');
+                        event.stopPropagation()
+                        void task(() => downloadBackup(backup), '备份下载已开始')
                       }}
                       type="button"
                     >
@@ -417,11 +417,11 @@ export function BackupPage() {
                     <button
                       aria-label={`校验 ${backup.backupNo}`}
                       onClick={(event) => {
-                        event.stopPropagation();
+                        event.stopPropagation()
                         void task(
                           () => mutations.verify.mutateAsync(backup.id),
                           'SHA-256 与目录校验通过',
-                        );
+                        )
                       }}
                       type="button"
                     >
@@ -431,11 +431,11 @@ export function BackupPage() {
                   <button
                     aria-label={`${backup.locked ? '解除锁定' : '永久保留'} ${backup.backupNo}`}
                     onClick={(event) => {
-                      event.stopPropagation();
+                      event.stopPropagation()
                       void task(
                         () => mutations.lock.mutateAsync({ id: backup.id, locked: !backup.locked }),
                         backup.locked ? '已解除永久保留' : '恢复点已永久保留',
-                      );
+                      )
                     }}
                     type="button"
                   >
@@ -445,8 +445,8 @@ export function BackupPage() {
                     <button
                       aria-label={`恢复 ${backup.backupNo}`}
                       onClick={(event) => {
-                        event.stopPropagation();
-                        setRestoreId(backup.id);
+                        event.stopPropagation()
+                        setRestoreId(backup.id)
                       }}
                       type="button"
                     >
@@ -454,7 +454,7 @@ export function BackupPage() {
                     </button>
                   ) : null}
                 </>
-              );
+              )
             }}
             columns={columns()}
             error={list.error ? apiErrorMessage(list.error) : undefined}
@@ -464,11 +464,11 @@ export function BackupPage() {
             onPageSizeChange={(pageSize) => setParam('pageSize', String(pageSize))}
             onRowClick={(row) => setActiveId(row.id)}
             onSort={(key) => {
-              setParam('sortBy', key);
+              setParam('sortBy', key)
               setParam(
                 'sortOrder',
                 listParams.sortBy === key && listParams.sortOrder === 'asc' ? 'desc' : 'asc',
-              );
+              )
             }}
             rows={list.data?.data ?? []}
             sortBy={listParams.sortBy}
@@ -510,5 +510,5 @@ export function BackupPage() {
         open={Boolean(restoreTarget)}
       />
     </section>
-  );
+  )
 }

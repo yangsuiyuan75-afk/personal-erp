@@ -7,4 +7,4 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/test/setup-integration.ts'],
   testEnvironment: 'node',
   testTimeout: 30000,
-};
+}

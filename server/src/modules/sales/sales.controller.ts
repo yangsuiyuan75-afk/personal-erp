@@ -9,11 +9,11 @@ import {
   Post,
   Query,
   Req,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { RequestWithId } from '../../common/middleware/request-id.middleware';
-import type { AuthUser } from '../auth/auth.types';
+} from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import type { RequestWithId } from '../../common/middleware/request-id.middleware'
+import type { AuthUser } from '../auth/auth.types'
 import {
   CreateSalesIssueDto,
   CreateSalesOrderDto,
@@ -23,8 +23,8 @@ import {
   SalesQueryDto,
   UpdateSalesIssueDto,
   UpdateSalesPriceDto,
-} from './dto/sales.dto';
-import { SalesService } from './sales.service';
+} from './dto/sales.dto'
+import { SalesService } from './sales.service'
 
 @ApiTags('Sales')
 @ApiBearerAuth()
@@ -34,12 +34,12 @@ export class SalesController {
 
   @Get('prices')
   prices(@Query() query: SalesQueryDto) {
-    return this.sales.listPrices(query);
+    return this.sales.listPrices(query)
   }
 
   @Get('prices/resolve')
   resolvePrice(@Query() query: ResolveSalesPriceDto) {
-    return this.sales.resolvePrice(query);
+    return this.sales.resolvePrice(query)
   }
 
   @Post('prices')
@@ -48,7 +48,7 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.createPrice(payload, actor, request.requestId);
+    return this.sales.createPrice(payload, actor, request.requestId)
   }
 
   @Patch('prices/:id')
@@ -58,12 +58,12 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.updatePrice(id, payload, actor, request.requestId);
+    return this.sales.updatePrice(id, payload, actor, request.requestId)
   }
 
   @Get('orders')
   orders(@Query() query: SalesQueryDto) {
-    return this.sales.listOrders(query);
+    return this.sales.listOrders(query)
   }
 
   @Post('orders')
@@ -72,7 +72,7 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.createOrder(payload, actor, request.requestId);
+    return this.sales.createOrder(payload, actor, request.requestId)
   }
 
   @Post('orders/:id/confirm')
@@ -81,7 +81,7 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.confirmOrder(id, actor, request.requestId);
+    return this.sales.confirmOrder(id, actor, request.requestId)
   }
 
   @Post('orders/:id/cancel')
@@ -90,12 +90,12 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.cancelOrder(id, actor, request.requestId);
+    return this.sales.cancelOrder(id, actor, request.requestId)
   }
 
   @Get('issues')
   issues(@Query() query: SalesQueryDto) {
-    return this.sales.listIssues(query);
+    return this.sales.listIssues(query)
   }
 
   @Post('issues')
@@ -104,7 +104,7 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.createIssue(payload, actor, request.requestId);
+    return this.sales.createIssue(payload, actor, request.requestId)
   }
 
   @Patch('issues/:id')
@@ -114,7 +114,7 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.updateIssue(id, payload, actor, request.requestId);
+    return this.sales.updateIssue(id, payload, actor, request.requestId)
   }
 
   @Post('issues/:id/post')
@@ -124,12 +124,12 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.postIssue(id, idempotencyKey, actor, request.requestId);
+    return this.sales.postIssue(id, idempotencyKey, actor, request.requestId)
   }
 
   @Get('returns')
   returns(@Query() query: SalesQueryDto) {
-    return this.sales.listReturns(query);
+    return this.sales.listReturns(query)
   }
 
   @Post('returns')
@@ -138,7 +138,7 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.createReturn(payload, actor, request.requestId);
+    return this.sales.createReturn(payload, actor, request.requestId)
   }
 
   @Post('returns/:id/post')
@@ -148,16 +148,16 @@ export class SalesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.sales.postReturn(id, idempotencyKey, actor, request.requestId);
+    return this.sales.postReturn(id, idempotencyKey, actor, request.requestId)
   }
 
   @Get('receivables')
   receivables(@Query() query: SalesQueryDto) {
-    return this.sales.listReceivables(query);
+    return this.sales.listReceivables(query)
   }
 
   @Get('customer-refunds')
   refunds(@Query() query: SalesQueryDto) {
-    return this.sales.listRefunds(query);
+    return this.sales.listRefunds(query)
   }
 }

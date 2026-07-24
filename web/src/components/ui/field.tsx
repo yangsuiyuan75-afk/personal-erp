@@ -1,5 +1,5 @@
-import { Select as BaseSelect } from '@base-ui/react/select';
-import { Check, ChevronDown } from 'lucide-react';
+import { Select as BaseSelect } from '@base-ui/react/select'
+import { Check, ChevronDown } from 'lucide-react'
 import {
   forwardRef,
   useLayoutEffect,
@@ -12,17 +12,17 @@ import {
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
-} from 'react';
-import { cn } from '@/lib/utils';
+} from 'react'
+import { cn } from '@/lib/utils'
 
 export function Field({
   label,
   error,
   children,
 }: {
-  label: string;
-  error?: string;
-  children: ReactNode;
+  label: string
+  error?: string
+  children: ReactNode
 }) {
   return (
     <label className="field">
@@ -30,22 +30,22 @@ export function Field({
       {children}
       {error ? <small className="field-error">{error}</small> : null}
     </label>
-  );
+  )
 }
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} autoComplete="off" className={cn('input', className)} />;
+  return <input {...props} autoComplete="off" className={cn('input', className)} />
 }
 
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} autoComplete="off" className={cn('input textarea', className)} />;
+  return <textarea {...props} autoComplete="off" className={cn('input textarea', className)} />
 }
 
-type SelectValue = string | string[];
+type SelectValue = string | string[]
 
 function assignRef<T>(ref: ForwardedRef<T>, value: T | null) {
-  if (typeof ref === 'function') ref(value);
-  else if (ref) ref.current = value;
+  if (typeof ref === 'function') ref(value)
+  else if (ref) ref.current = value
 }
 
 export const Select = forwardRef<
@@ -66,53 +66,53 @@ export const Select = forwardRef<
   },
   ref,
 ) {
-  const nativeRef = useRef<HTMLSelectElement>(null);
+  const nativeRef = useRef<HTMLSelectElement>(null)
   const [options, setOptions] = useState<
     Array<{ value: string; label: string; disabled: boolean }>
-  >([]);
-  const [internalValue, setInternalValue] = useState<SelectValue>(multiple ? [] : '');
+  >([])
+  const [internalValue, setInternalValue] = useState<SelectValue>(multiple ? [] : '')
   const controlledValue =
-    value === undefined ? undefined : Array.isArray(value) ? value.map(String) : String(value);
-  const selectedValue = controlledValue ?? internalValue;
+    value === undefined ? undefined : Array.isArray(value) ? value.map(String) : String(value)
+  const selectedValue = controlledValue ?? internalValue
 
   useLayoutEffect(() => {
-    const native = nativeRef.current;
-    if (!native) return;
+    const native = nativeRef.current
+    if (!native) return
     setOptions(
       Array.from(native.options).map((option) => ({
         value: option.value,
         label: option.text,
         disabled: option.disabled,
       })),
-    );
+    )
     if (controlledValue === undefined)
       setInternalValue(
         multiple ? Array.from(native.selectedOptions, (option) => option.value) : native.value,
-      );
-  }, [children, controlledValue, multiple]);
+      )
+  }, [children, controlledValue, multiple])
 
   const updateValue = (next: string | string[] | null) => {
-    const native = nativeRef.current;
-    const normalized = Array.isArray(next) ? next : (next ?? '');
+    const native = nativeRef.current
+    const normalized = Array.isArray(next) ? next : (next ?? '')
     if (native) {
       if (Array.isArray(normalized)) {
-        for (const option of native.options) option.selected = normalized.includes(option.value);
-      } else native.value = normalized;
+        for (const option of native.options) option.selected = normalized.includes(option.value)
+      } else native.value = normalized
     }
-    if (controlledValue === undefined) setInternalValue(normalized);
+    if (controlledValue === undefined) setInternalValue(normalized)
     onChange?.({
       currentTarget: native,
       target: native,
       type: 'change',
-    } as ChangeEvent<HTMLSelectElement>);
-  };
+    } as ChangeEvent<HTMLSelectElement>)
+  }
 
   const notifyBlur = () =>
     onBlur?.({
       currentTarget: nativeRef.current,
       target: nativeRef.current,
       type: 'blur',
-    } as FocusEvent<HTMLSelectElement>);
+    } as FocusEvent<HTMLSelectElement>)
 
   return (
     <>
@@ -122,8 +122,8 @@ export const Select = forwardRef<
         defaultValue={defaultValue}
         multiple={multiple}
         ref={(node) => {
-          nativeRef.current = node;
-          assignRef(ref, node);
+          nativeRef.current = node
+          assignRef(ref, node)
         }}
         tabIndex={-1}
         {...props}
@@ -175,5 +175,5 @@ export const Select = forwardRef<
         </BaseSelect.Portal>
       </BaseSelect.Root>
     </>
-  );
-});
+  )
+})

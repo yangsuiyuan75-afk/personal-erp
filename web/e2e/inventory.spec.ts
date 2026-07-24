@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/v1/auth/status', (route) =>
@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
       contentType: 'application/json',
       body: JSON.stringify({ data: { initialized: true } }),
     }),
-  );
+  )
   await page.route('**/api/v1/auth/refresh', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
         data: { user: { id: 'admin-id', username: 'admin' }, accessToken: 'test-access-token' },
       }),
     }),
-  );
+  )
   await page.route('**/api/v1/inventory/balances*', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -56,7 +56,7 @@ test.beforeEach(async ({ page }) => {
         },
       }),
     }),
-  );
+  )
   await page.route('**/api/v1/inventory/batches*', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -81,21 +81,21 @@ test.beforeEach(async ({ page }) => {
         },
       }),
     }),
-  );
-});
+  )
+})
 
 test('renders the data-first inventory workspace and contextual batch trace', async ({ page }) => {
-  await page.goto('/inventory');
-  await expect(page.getByRole('navigation', { name: '库存视图' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '库存余额' })).toHaveClass(/active/);
-  await expect(page.getByRole('button', { name: '发起调拨' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: '透明收纳盒', exact: true })).toBeVisible();
-  await expect(page.getByText('选择一条库存余额')).toBeVisible();
+  await page.goto('/inventory')
+  await expect(page.getByRole('navigation', { name: '库存视图' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '库存余额' })).toHaveClass(/active/)
+  await expect(page.getByRole('button', { name: '发起调拨' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: '透明收纳盒', exact: true })).toBeVisible()
+  await expect(page.getByText('选择一条库存余额')).toBeVisible()
 
-  await page.getByRole('cell', { name: '透明收纳盒', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '透明收纳盒' })).toBeVisible();
-  await expect(page.getByText('OPEN-BOX-001')).toBeVisible();
+  await page.getByRole('cell', { name: '透明收纳盒', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '透明收纳盒' })).toBeVisible()
+  await expect(page.getByText('OPEN-BOX-001')).toBeVisible()
 
-  await page.getByRole('textbox', { name: '库存关键字搜索' }).fill('收纳');
-  await expect(page).toHaveURL(/keyword=%E6%94%B6%E7%BA%B3/);
-});
+  await page.getByRole('textbox', { name: '库存关键字搜索' }).fill('收纳')
+  await expect(page).toHaveURL(/keyword=%E6%94%B6%E7%BA%B3/)
+})

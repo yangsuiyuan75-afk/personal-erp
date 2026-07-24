@@ -138,7 +138,7 @@ const LABELS: Record<string, string> = {
   purchaseChannels: '采购渠道',
   salesChannels: '销售渠道',
   customers: '客户',
-};
+}
 
 const ACTION_WORDS: Record<string, string> = {
   ACCOUNT: '账户',
@@ -184,16 +184,16 @@ const ACTION_WORDS: Record<string, string> = {
   TRANSFER: '调拨',
   UPDATE: '更新',
   VERIFY: '校验',
-};
+}
 
 export function enumLabel(value: unknown): string {
-  const raw = String(value ?? '');
-  return LABELS[raw] ?? raw;
+  const raw = String(value ?? '')
+  return LABELS[raw] ?? raw
 }
 
 export function auditActionLabel(value: unknown): string {
   return String(value ?? '')
     .split('_')
     .map((part) => ACTION_WORDS[part] ?? part)
-    .join('');
+    .join('')
 }

@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer'
 import {
   IsBoolean,
   IsEnum,
@@ -10,8 +10,8 @@ import {
   IsUUID,
   Max,
   Min,
-} from 'class-validator';
-import { MasterDataStatus } from '@prisma/client';
+} from 'class-validator'
+import { MasterDataStatus } from '@prisma/client'
 
 export enum SortOrder {
   ASC = 'asc',
@@ -23,69 +23,69 @@ export class ListQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page = 1;
+  page = 1
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @IsIn([10, 20, 50, 100])
-  pageSize = 20;
+  pageSize = 20
 
   @IsOptional()
   @IsString()
-  keyword?: string;
+  keyword?: string
 
   @IsOptional()
   @IsEnum(MasterDataStatus)
-  status?: MasterDataStatus;
+  status?: MasterDataStatus
 
   @IsOptional()
   @IsString()
-  sortBy = 'createdAt';
+  sortBy = 'createdAt'
 
   @IsOptional()
   @IsEnum(SortOrder)
-  sortOrder = SortOrder.DESC;
+  sortOrder = SortOrder.DESC
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  createdFrom?: string;
+  createdFrom?: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  createdTo?: string;
+  createdTo?: string
 
   @IsOptional()
   @IsUUID()
-  categoryId?: string;
+  categoryId?: string
 
   @IsOptional()
   @IsUUID()
-  productId?: string;
+  productId?: string
 
   @IsOptional()
   @IsUUID()
-  purchaseChannelId?: string;
+  purchaseChannelId?: string
 
   @IsOptional()
   @IsUUID()
-  salesChannelId?: string;
+  salesChannelId?: string
 
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
-  hasImage?: boolean;
+  hasImage?: boolean
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10_000)
-  exportLimit?: number;
+  exportLimit?: number
 }
 
 export function paginationMeta(page: number, pageSize: number, total: number) {
-  const totalPages = Math.ceil(total / pageSize);
+  const totalPages = Math.ceil(total / pageSize)
   return {
     page,
     pageSize,
@@ -93,5 +93,5 @@ export function paginationMeta(page: number, pageSize: number, total: number) {
     totalPages,
     hasPreviousPage: page > 1,
     hasNextPage: page < totalPages,
-  };
+  }
 }

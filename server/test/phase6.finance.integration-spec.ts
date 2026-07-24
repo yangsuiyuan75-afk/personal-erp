@@ -7,32 +7,32 @@ import {
   PayableStatus,
   PrismaClient,
   ReceivableStatus,
-} from '@prisma/client';
-import { PrismaService } from '../src/database/prisma.service';
-import { SortOrder } from '../src/common/dto/list-query.dto';
-import { AuditService } from '../src/modules/audit/audit.service';
-import { FinanceService } from '../src/modules/finance/finance.service';
-import { cleanDatabase } from './database-cleanup';
+} from '@prisma/client'
+import { PrismaService } from '../src/database/prisma.service'
+import { SortOrder } from '../src/common/dto/list-query.dto'
+import { AuditService } from '../src/modules/audit/audit.service'
+import { FinanceService } from '../src/modules/finance/finance.service'
+import { cleanDatabase } from './database-cleanup'
 
 describe('Phase 6 finance integration', () => {
-  const prisma = new PrismaService();
-  const audit = new AuditService(prisma);
-  const finance = new FinanceService(prisma, audit);
-  let actor: { id: string; username: string };
-  let accountId: string;
-  let payableId: string;
-  let receivableId: string;
-  let supplierCreditId: string;
-  let compensationReceivableId: string;
-  let supplierId: string;
+  const prisma = new PrismaService()
+  const audit = new AuditService(prisma)
+  const finance = new FinanceService(prisma, audit)
+  let actor: { id: string; username: string }
+  let accountId: string
+  let payableId: string
+  let receivableId: string
+  let supplierCreditId: string
+  let compensationReceivableId: string
+  let supplierId: string
 
   beforeAll(async () => {
-    await prisma.$connect();
-    await cleanDatabase(prisma as PrismaClient);
+    await prisma.$connect()
+    await cleanDatabase(prisma as PrismaClient)
     const user = await prisma.adminUser.create({
       data: { username: 'finance-integration', passwordHash: 'not-used' },
-    });
-    actor = { id: user.id, username: user.username };
+    })
+    actor = { id: user.id, username: user.username }
     const [purchaseChannel, salesChannel] = await Promise.all([
       prisma.purchaseChannel.create({
         data: { code: 'FIN-PUR', name: '财务采购渠道', type: 'PLATFORM' },
@@ -44,7 +44,7 @@ describe('Phase 6 finance integration', () => {
           inventoryMode: 'DIRECT_FROM_LOCATION',
         },
       }),
-    ]);
+    ])
     const [supplier, buyer, customer] = await Promise.all([
       prisma.supplier.create({
         data: { code: 'FIN-SUP', name: '财务供应商', purchaseChannelId: purchaseChannel.id },
@@ -57,13 +57,13 @@ describe('Phase 6 finance integration', () => {
           defaultSalesChannelId: salesChannel.id,
         },
       }),
-    ]);
-    supplierId = supplier.id;
+    ])
+    supplierId = supplier.id
     const account = await finance.createAccount(
       { code: 'FIN-BANK', name: '经营银行卡', type: 'BANK', currency: 'CNY' },
       actor,
-    );
-    accountId = account.id;
+    )
+    accountId = account.id
     const [payable, receivable, credit, claim] = await Promise.all([
       prisma.payable.create({
         data: {
@@ -107,10 +107,10 @@ describe('Phase 6 finance integration', () => {
           status: 'SETTLED',
         },
       }),
-    ]);
-    payableId = payable.id;
-    receivableId = receivable.id;
-    supplierCreditId = credit.id;
+    ])
+    payableId = payable.id
+    receivableId = receivable.id
+    supplierCreditId = credit.id
     const settlement = await prisma.supplierClaimSettlement.create({
       data: {
         settlementNo: 'FIN-SCS-001',
@@ -121,7 +121,7 @@ describe('Phase 6 finance integration', () => {
         occurredAt: new Date('2026-07-05T00:00:00.000Z'),
         postedAt: new Date('2026-07-05T00:00:00.000Z'),
       },
-    });
+    })
     const compensation = await prisma.supplierCompensationReceivable.create({
       data: {
         receivableNo: 'FIN-COMP-001',
@@ -131,14 +131,14 @@ describe('Phase 6 finance integration', () => {
         outstandingAmount: '10',
         occurredAt: new Date('2026-07-05T00:00:00.000Z'),
       },
-    });
-    compensationReceivableId = compensation.id;
-  });
+    })
+    compensationReceivableId = compensation.id
+  })
 
   afterAll(async () => {
-    await cleanDatabase(prisma as PrismaClient);
-    await prisma.$disconnect();
-  });
+    await cleanDatabase(prisma as PrismaClient)
+    await prisma.$disconnect()
+  })
 
   it('posts allocated cash payments and supplier-credit settlement separately', async () => {
     const payment = await finance.createPayment(
@@ -157,27 +157,27 @@ describe('Phase 6 finance integration', () => {
         ],
       },
       actor,
-    );
-    const posted = await finance.postPayment(payment.id, 'fin-payment-post', actor);
-    const replayed = await finance.postPayment(payment.id, 'fin-payment-post', actor);
+    )
+    const posted = await finance.postPayment(payment.id, 'fin-payment-post', actor)
+    const replayed = await finance.postPayment(payment.id, 'fin-payment-post', actor)
     const [payable, credit, transaction] = await Promise.all([
       prisma.payable.findUniqueOrThrow({ where: { id: payableId } }),
       prisma.supplierCredit.findUniqueOrThrow({ where: { id: supplierCreditId } }),
       prisma.financialTransaction.findUniqueOrThrow({
         where: { sourceType_sourceId: { sourceType: 'PAYMENT', sourceId: payment.id } },
       }),
-    ]);
-    expect(posted.status).toBe(DocumentStatus.POSTED);
-    expect(replayed.id).toBe(posted.id);
-    expect(payable.paidAmount.toString()).toBe('30');
-    expect(payable.creditedAmount.toString()).toBe('20');
-    expect(payable.outstandingAmount.toString()).toBe('50');
-    expect(payable.status).toBe(PayableStatus.PARTIALLY_PAID);
-    expect(credit.appliedAmount.toString()).toBe('20');
-    expect(transaction.amount.toString()).toBe('30');
-    expect(transaction.direction).toBe(FinancialDirection.OUT);
-    expect(await prisma.financialTransaction.count({ where: { sourceId: payment.id } })).toBe(1);
-  });
+    ])
+    expect(posted.status).toBe(DocumentStatus.POSTED)
+    expect(replayed.id).toBe(posted.id)
+    expect(payable.paidAmount.toString()).toBe('30')
+    expect(payable.creditedAmount.toString()).toBe('20')
+    expect(payable.outstandingAmount.toString()).toBe('50')
+    expect(payable.status).toBe(PayableStatus.PARTIALLY_PAID)
+    expect(credit.appliedAmount.toString()).toBe('20')
+    expect(transaction.amount.toString()).toBe('30')
+    expect(transaction.direction).toBe(FinancialDirection.OUT)
+    expect(await prisma.financialTransaction.count({ where: { sourceId: payment.id } })).toBe(1)
+  })
 
   it('posts partial customer receipt and supplier compensation as distinct inflows', async () => {
     const salesReceipt = await finance.createReceipt(
@@ -189,8 +189,8 @@ describe('Phase 6 finance integration', () => {
         allocations: [{ receivableId, amount: '60' }],
       },
       actor,
-    );
-    await finance.postReceipt(salesReceipt.id, 'fin-sales-receipt', actor);
+    )
+    await finance.postReceipt(salesReceipt.id, 'fin-sales-receipt', actor)
     const compensationReceipt = await finance.createReceipt(
       {
         accountId,
@@ -199,8 +199,8 @@ describe('Phase 6 finance integration', () => {
         allocations: [{ supplierCompensationReceivableId: compensationReceivableId, amount: '10' }],
       },
       actor,
-    );
-    await finance.postReceipt(compensationReceipt.id, 'fin-compensation-receipt', actor);
+    )
+    await finance.postReceipt(compensationReceipt.id, 'fin-compensation-receipt', actor)
     const [receivable, compensation, transactions] = await Promise.all([
       prisma.receivable.findUniqueOrThrow({ where: { id: receivableId } }),
       prisma.supplierCompensationReceivable.findUniqueOrThrow({
@@ -209,17 +209,17 @@ describe('Phase 6 finance integration', () => {
       prisma.financialTransaction.findMany({
         where: { sourceId: { in: [salesReceipt.id, compensationReceipt.id] } },
       }),
-    ]);
-    expect(receivable.receivedAmount.toString()).toBe('60');
-    expect(receivable.outstandingAmount.toString()).toBe('90');
-    expect(receivable.status).toBe(ReceivableStatus.PARTIALLY_RECEIVED);
-    expect(compensation.outstandingAmount.toString()).toBe('0');
-    expect(compensation.status).toBe(ReceivableStatus.SETTLED);
+    ])
+    expect(receivable.receivedAmount.toString()).toBe('60')
+    expect(receivable.outstandingAmount.toString()).toBe('90')
+    expect(receivable.status).toBe(ReceivableStatus.PARTIALLY_RECEIVED)
+    expect(compensation.outstandingAmount.toString()).toBe('0')
+    expect(compensation.status).toBe(ReceivableStatus.SETTLED)
     expect(transactions.map((row) => row.category).sort()).toEqual([
       FinancialTransactionCategory.SALES_RECEIPT,
       FinancialTransactionCategory.SUPPLIER_COMPENSATION,
-    ]);
-  });
+    ])
+  })
 
   it('derives account balances and monthly multidimensional analysis only from posted flows', async () => {
     const opening = await finance.createAdjustment(
@@ -232,8 +232,8 @@ describe('Phase 6 finance integration', () => {
         reason: '账户期初余额',
       },
       actor,
-    );
-    await finance.postAdjustment(opening.id, 'fin-opening-adjustment', actor);
+    )
+    await finance.postAdjustment(opening.id, 'fin-opening-adjustment', actor)
     const platformFee = await finance.createAdjustment(
       {
         accountId,
@@ -244,8 +244,8 @@ describe('Phase 6 finance integration', () => {
         reason: '平台服务费',
       },
       actor,
-    );
-    await finance.postAdjustment(platformFee.id, 'fin-platform-fee', actor);
+    )
+    await finance.postAdjustment(platformFee.id, 'fin-platform-fee', actor)
     const [accounts, analytics] = await Promise.all([
       finance.listAccounts({ page: 1, pageSize: 20, sortBy: 'code', sortOrder: SortOrder.ASC }),
       finance.analytics({
@@ -255,18 +255,18 @@ describe('Phase 6 finance integration', () => {
         sortOrder: SortOrder.DESC,
         month: '2026-07',
       }),
-    ]);
-    expect(accounts.data[0].balance.toString()).toBe('135');
-    expect(analytics.summary.income.toString()).toBe('170');
-    expect(analytics.summary.outflow.toString()).toBe('35');
-    expect(analytics.summary.netCashFlow.toString()).toBe('135');
-    expect(analytics.summary.platformFee.toString()).toBe('5');
-    expect(analytics.summary.supplierCompensation.toString()).toBe('10');
-    expect(analytics.summary.outstandingPayable.toString()).toBe('50');
-    expect(analytics.summary.outstandingReceivable.toString()).toBe('90');
-    expect(analytics.dimensions.suppliers[0]).toMatchObject({ id: supplierId });
-    expect(analytics.monthly).toHaveLength(1);
-  });
+    ])
+    expect(accounts.data[0].balance.toString()).toBe('135')
+    expect(analytics.summary.income.toString()).toBe('170')
+    expect(analytics.summary.outflow.toString()).toBe('35')
+    expect(analytics.summary.netCashFlow.toString()).toBe('135')
+    expect(analytics.summary.platformFee.toString()).toBe('5')
+    expect(analytics.summary.supplierCompensation.toString()).toBe('10')
+    expect(analytics.summary.outstandingPayable.toString()).toBe('50')
+    expect(analytics.summary.outstandingReceivable.toString()).toBe('90')
+    expect(analytics.dimensions.suppliers[0]).toMatchObject({ id: supplierId })
+    expect(analytics.monthly).toHaveLength(1)
+  })
 
   it('posts daily expense bills into cash flow and monthly operating results', async () => {
     const bill = await finance.createExpenseBill(
@@ -279,17 +279,17 @@ describe('Phase 6 finance integration', () => {
         occurredAt: '2026-07-22T00:00:00.000Z',
       },
       actor,
-    );
+    )
     const draftList = await finance.listExpenseBills({
       page: 1,
       pageSize: 20,
       sortBy: 'occurredAt',
       sortOrder: SortOrder.DESC,
       month: '2026-07',
-    });
-    expect(draftList.summary.pendingAmount.toString()).toBe('80');
+    })
+    expect(draftList.summary.pendingAmount.toString()).toBe('80')
 
-    await finance.postExpenseBill(bill.id, 'fin-expense-bill', actor);
+    await finance.postExpenseBill(bill.id, 'fin-expense-bill', actor)
     const [expenses, transaction, analytics] = await Promise.all([
       finance.listExpenseBills({
         page: 1,
@@ -308,14 +308,14 @@ describe('Phase 6 finance integration', () => {
         sortOrder: SortOrder.DESC,
         month: '2026-07',
       }),
-    ]);
-    expect(expenses.summary).toMatchObject({ billCount: 1 });
-    expect(expenses.summary.postedAmount.toString()).toBe('80');
-    expect(expenses.summary.pendingAmount.toString()).toBe('0');
+    ])
+    expect(expenses.summary).toMatchObject({ billCount: 1 })
+    expect(expenses.summary.postedAmount.toString()).toBe('80')
+    expect(expenses.summary.pendingAmount.toString()).toBe('0')
     expect(transaction).toMatchObject({
       direction: FinancialDirection.OUT,
       category: FinancialTransactionCategory.OTHER_EXPENSE,
-    });
-    expect(analytics.summary.otherExpense.toString()).toBe('80');
-  });
-});
+    })
+    expect(analytics.summary.otherExpense.toString()).toBe('80')
+  })
+})

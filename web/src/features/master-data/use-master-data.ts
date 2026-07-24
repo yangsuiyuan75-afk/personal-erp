@@ -1,5 +1,5 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import {
   createMasterData,
   deactivateMasterData,
@@ -10,15 +10,15 @@ import {
   updateMasterData,
   uploadProductImages,
   type ListParams,
-} from './api';
-import { queryKeys } from './query-keys';
+} from './api'
+import { queryKeys } from './query-keys'
 
 export function useMasterList(resource: string, params: ListParams) {
   return useQuery({
     queryKey: queryKeys.masterData.list(resource, params),
     queryFn: () => listMasterData(resource, params),
     placeholderData: keepPreviousData,
-  });
+  })
 }
 
 export function useMasterOptions(resource?: string) {
@@ -34,12 +34,12 @@ export function useMasterOptions(resource?: string) {
       }),
     enabled: Boolean(resource),
     staleTime: 60_000,
-  });
+  })
 }
 
 export function useMasterMutations(resource: string) {
-  const client = useQueryClient();
-  const invalidate = () => client.invalidateQueries({ queryKey: ['master-data', resource] });
+  const client = useQueryClient()
+  const invalidate = () => client.invalidateQueries({ queryKey: ['master-data', resource] })
   return {
     create: useMutation({
       mutationFn: (payload: Record<string, unknown>) => createMasterData(resource, payload),
@@ -54,17 +54,17 @@ export function useMasterMutations(resource: string) {
       mutationFn: (id: string) => deactivateMasterData(resource, id),
       onSuccess: invalidate,
     }),
-  };
+  }
 }
 
-const productImageKey = (productId?: string) => ['product-images', productId] as const;
+const productImageKey = (productId?: string) => ['product-images', productId] as const
 
 export function useProductImages(productId?: string) {
   return useQuery({
     queryKey: productImageKey(productId),
     queryFn: () => getProductImages(productId!),
     enabled: Boolean(productId),
-  });
+  })
 }
 
 export function useProductImageUrl(productId?: string, fileAssetId?: string) {
@@ -73,26 +73,26 @@ export function useProductImageUrl(productId?: string, fileAssetId?: string) {
     queryFn: () => getProductImageBlob(productId!, fileAssetId!),
     enabled: Boolean(productId && fileAssetId),
     staleTime: 5 * 60_000,
-  });
-  const [url, setUrl] = useState<string>();
+  })
+  const [url, setUrl] = useState<string>()
   useEffect(() => {
     if (!query.data) {
-      setUrl(undefined);
-      return;
+      setUrl(undefined)
+      return
     }
-    const next = URL.createObjectURL(query.data);
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-  }, [query.data]);
-  return { ...query, url };
+    const next = URL.createObjectURL(query.data)
+    setUrl(next)
+    return () => URL.revokeObjectURL(next)
+  }, [query.data])
+  return { ...query, url }
 }
 
 export function useProductImageMutations() {
-  const client = useQueryClient();
+  const client = useQueryClient()
   const refresh = (productId: string) => {
-    client.invalidateQueries({ queryKey: productImageKey(productId) });
-    client.invalidateQueries({ queryKey: ['master-data', 'products'] });
-  };
+    client.invalidateQueries({ queryKey: productImageKey(productId) })
+    client.invalidateQueries({ queryKey: ['master-data', 'products'] })
+  }
   return {
     upload: useMutation({
       mutationFn: ({ productId, files }: { productId: string; files: File[] }) =>
@@ -104,5 +104,5 @@ export function useProductImageMutations() {
         deleteProductImage(productId, imageId),
       onSuccess: (_, { productId }) => refresh(productId),
     }),
-  };
+  }
 }

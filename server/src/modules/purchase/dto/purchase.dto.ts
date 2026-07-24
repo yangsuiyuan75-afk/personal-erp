@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -13,213 +13,213 @@ import {
   Length,
   MaxLength,
   ValidateNested,
-} from 'class-validator';
-import { MasterDataStatus } from '@prisma/client';
-import { ListQueryDto } from '../../../common/dto/list-query.dto';
+} from 'class-validator'
+import { MasterDataStatus } from '@prisma/client'
+import { ListQueryDto } from '../../../common/dto/list-query.dto'
 
 export class PurchaseQueryDto extends ListQueryDto {
   @IsOptional()
   @IsUUID()
-  supplierId?: string;
+  supplierId?: string
 
   @IsOptional()
   @IsUUID()
-  buyerId?: string;
+  buyerId?: string
 
   @IsOptional()
   @IsUUID()
-  skuId?: string;
+  skuId?: string
 
   @IsOptional()
   @IsString()
-  documentStatus?: string;
+  documentStatus?: string
 
   @IsOptional()
   @IsString()
-  sourceType?: string;
+  sourceType?: string
 }
 
 export class CreatePurchasePriceDto {
   @IsUUID()
-  skuId!: string;
+  skuId!: string
 
   @IsUUID()
-  supplierId!: string;
+  supplierId!: string
 
   @IsOptional()
   @IsUUID()
-  buyerId?: string;
+  buyerId?: string
 
   @IsUUID()
-  purchaseChannelId!: string;
+  purchaseChannelId!: string
 
   @IsOptional()
   @IsString()
   @Length(3, 3)
-  currency = 'CNY';
+  currency = 'CNY'
 
   @IsNumberString()
-  price!: string;
+  price!: string
 
   @IsNumberString()
-  minQuantity!: string;
+  minQuantity!: string
 
   @IsISO8601({ strict: true })
-  effectiveFrom!: string;
+  effectiveFrom!: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  effectiveTo?: string;
+  effectiveTo?: string
 }
 
 export class UpdatePurchasePriceDto {
   @IsOptional()
   @IsNumberString()
-  price?: string;
+  price?: string
 
   @IsOptional()
   @IsNumberString()
-  minQuantity?: string;
+  minQuantity?: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  effectiveFrom?: string;
+  effectiveFrom?: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  effectiveTo?: string;
+  effectiveTo?: string
 
   @IsOptional()
   @IsEnum(MasterDataStatus)
-  status?: MasterDataStatus;
+  status?: MasterDataStatus
 }
 
 export class PurchaseOrderItemDto {
   @IsUUID()
-  skuId!: string;
+  skuId!: string
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsNumberString()
-  unitPrice!: string;
+  unitPrice!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class CreatePurchaseOrderDto {
   @IsUUID()
-  supplierId!: string;
+  supplierId!: string
 
   @IsUUID()
-  buyerId!: string;
+  buyerId!: string
 
   @IsUUID()
-  purchaseChannelId!: string;
+  purchaseChannelId!: string
 
   @IsOptional()
   @IsString()
   @Length(3, 3)
-  currency = 'CNY';
+  currency = 'CNY'
 
   @IsISO8601({ strict: true })
-  orderDate!: string;
+  orderDate!: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  expectedAt?: string;
+  expectedAt?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => PurchaseOrderItemDto)
-  items!: PurchaseOrderItemDto[];
+  items!: PurchaseOrderItemDto[]
 }
 
 export class UpdatePurchaseOrderDto extends CreatePurchaseOrderDto {}
 
 export class PurchaseReceiptItemDto {
   @IsUUID()
-  purchaseOrderItemId!: string;
+  purchaseOrderItemId!: string
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
-  batchNo!: string;
+  batchNo!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class CreatePurchaseReceiptDto {
   @IsUUID()
-  purchaseOrderId!: string;
+  purchaseOrderId!: string
 
   @IsUUID()
-  locationId!: string;
+  locationId!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => PurchaseReceiptItemDto)
-  items!: PurchaseReceiptItemDto[];
+  items!: PurchaseReceiptItemDto[]
 }
 
 export class PurchaseReturnItemDto {
   @IsUUID()
-  purchaseReceiptItemId!: string;
+  purchaseReceiptItemId!: string
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class CreatePurchaseReturnDto {
   @IsUUID()
-  purchaseReceiptId!: string;
+  purchaseReceiptId!: string
 
   @IsUUID()
-  locationId!: string;
+  locationId!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(1000)
-  reason!: string;
+  reason!: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => PurchaseReturnItemDto)
-  items!: PurchaseReturnItemDto[];
+  items!: PurchaseReturnItemDto[]
 }

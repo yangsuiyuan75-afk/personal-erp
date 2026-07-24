@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -14,72 +14,72 @@ import {
   Matches,
   MaxLength,
   ValidateNested,
-} from 'class-validator';
+} from 'class-validator'
 import {
   ExpenseCategory,
   FinancialAccountType,
   FinancialDirection,
   FinancialTransactionCategory,
   MasterDataStatus,
-} from '@prisma/client';
-import { ListQueryDto } from '../../../common/dto/list-query.dto';
+} from '@prisma/client'
+import { ListQueryDto } from '../../../common/dto/list-query.dto'
 
 export class FinanceQueryDto extends ListQueryDto {
   @IsOptional()
   @IsUUID()
-  accountId?: string;
+  accountId?: string
 
   @IsOptional()
   @IsUUID()
-  supplierId?: string;
+  supplierId?: string
 
   @IsOptional()
   @IsUUID()
-  buyerId?: string;
+  buyerId?: string
 
   @IsOptional()
   @IsUUID()
-  customerId?: string;
+  customerId?: string
 
   @IsOptional()
   @IsString()
-  documentStatus?: string;
+  documentStatus?: string
 
   @IsOptional()
   @IsEnum(FinancialDirection)
-  direction?: FinancialDirection;
+  direction?: FinancialDirection
 
   @IsOptional()
   @IsEnum(FinancialTransactionCategory)
-  category?: FinancialTransactionCategory;
+  category?: FinancialTransactionCategory
 
   @IsOptional()
   @IsEnum(ExpenseCategory)
-  expenseCategory?: ExpenseCategory;
+  expenseCategory?: ExpenseCategory
 
   @IsOptional()
   @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
-  month?: string;
+  month?: string
 }
 
 export class CreateFinancialAccountDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(64)
-  code!: string;
+  code!: string
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  name!: string;
+  name!: string
 
   @IsEnum(FinancialAccountType)
-  type!: FinancialAccountType;
+  type!: FinancialAccountType
 
   @IsOptional()
   @IsString()
   @Length(3, 3)
-  currency = 'CNY';
+  currency = 'CNY'
 }
 
 export class UpdateFinancialAccountDto {
@@ -87,169 +87,169 @@ export class UpdateFinancialAccountDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  name?: string;
+  name?: string
 
   @IsOptional()
   @IsEnum(FinancialAccountType)
-  type?: FinancialAccountType;
+  type?: FinancialAccountType
 
   @IsOptional()
   @IsEnum(MasterDataStatus)
-  status?: MasterDataStatus;
+  status?: MasterDataStatus
 }
 
 export class PaymentAllocationDto {
   @IsOptional()
   @IsUUID()
-  payableId?: string;
+  payableId?: string
 
   @IsOptional()
   @IsUUID()
-  customerRefundId?: string;
+  customerRefundId?: string
 
   @IsNumberString()
-  amount!: string;
+  amount!: string
 
   @IsOptional()
   @IsUUID()
-  supplierCreditId?: string;
+  supplierCreditId?: string
 
   @IsOptional()
   @IsNumberString()
-  creditAmount?: string;
+  creditAmount?: string
 }
 
 export class CreatePaymentDto {
   @IsUUID()
-  accountId!: string;
+  accountId!: string
 
   @IsNumberString()
-  amount!: string;
+  amount!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsOptional()
   @IsString()
   @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
-  settlementPeriod?: string;
+  settlementPeriod?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => PaymentAllocationDto)
-  allocations!: PaymentAllocationDto[];
+  allocations!: PaymentAllocationDto[]
 }
 
 export class ReceiptAllocationDto {
   @IsOptional()
   @IsUUID()
-  receivableId?: string;
+  receivableId?: string
 
   @IsOptional()
   @IsUUID()
-  supplierCompensationReceivableId?: string;
+  supplierCompensationReceivableId?: string
 
   @IsNumberString()
-  amount!: string;
+  amount!: string
 }
 
 export class CreateReceiptDto {
   @IsUUID()
-  accountId!: string;
+  accountId!: string
 
   @IsNumberString()
-  amount!: string;
+  amount!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsOptional()
   @IsString()
   @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
-  settlementPeriod?: string;
+  settlementPeriod?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => ReceiptAllocationDto)
-  allocations!: ReceiptAllocationDto[];
+  allocations!: ReceiptAllocationDto[]
 }
 
 export class CreateAccountAdjustmentDto {
   @IsUUID()
-  accountId!: string;
+  accountId!: string
 
   @IsEnum(FinancialDirection)
-  direction!: FinancialDirection;
+  direction!: FinancialDirection
 
   @IsEnum(FinancialTransactionCategory)
-  category!: FinancialTransactionCategory;
+  category!: FinancialTransactionCategory
 
   @IsNumberString()
-  amount!: string;
+  amount!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(1000)
-  reason!: string;
+  reason!: string
 
   @IsOptional()
   @IsUUID()
-  salesChannelId?: string;
+  salesChannelId?: string
 
   @IsOptional()
   @IsUUID()
-  customerId?: string;
+  customerId?: string
 
   @IsOptional()
   @IsUUID()
-  supplierId?: string;
+  supplierId?: string
 
   @IsOptional()
   @IsUUID()
-  purchaseChannelId?: string;
+  purchaseChannelId?: string
 
   @IsOptional()
   @IsUUID()
-  buyerId?: string;
+  buyerId?: string
 }
 
 export class CreateExpenseBillDto {
   @IsUUID()
-  accountId!: string;
+  accountId!: string
 
   @IsEnum(ExpenseCategory)
-  expenseCategory!: ExpenseCategory;
+  expenseCategory!: ExpenseCategory
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
-  reason!: string;
+  reason!: string
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  payee!: string;
+  payee!: string
 
   @IsNumberString()
-  amount!: string;
+  amount!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 }

@@ -1,11 +1,11 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto'
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
-} from '@nestjs/common';
+} from '@nestjs/common'
 import {
   ClaimResolutionType,
   DocumentStatus,
@@ -18,52 +18,52 @@ import {
   QualityIssueStatus,
   QualityResponsibility,
   SupplierClaimStatus,
-} from '@prisma/client';
-import { paginationMeta } from '../../common/dto/list-query.dto';
-import { serializableTransaction } from '../../common/utils/serializable-transaction';
-import { PrismaService } from '../../database/prisma.service';
-import { AuditService } from '../audit/audit.service';
-import type { AuthUser } from '../auth/auth.types';
+} from '@prisma/client'
+import { paginationMeta } from '../../common/dto/list-query.dto'
+import { serializableTransaction } from '../../common/utils/serializable-transaction'
+import { PrismaService } from '../../database/prisma.service'
+import { AuditService } from '../audit/audit.service'
+import type { AuthUser } from '../auth/auth.types'
 import {
   InventoryPostingService,
   type PostingLineInput,
-} from '../inventory/inventory-posting.service';
+} from '../inventory/inventory-posting.service'
 import type {
   ConfirmQualityInspectionDto,
   CreateClaimSettlementDto,
   CreateQualityInspectionDto,
   QualityQueryDto,
-} from './dto/quality.dto';
+} from './dto/quality.dto'
 
-const INSPECTION_SORT = ['createdAt', 'inspectedAt', 'inspectionNo'] as const;
-const ISSUE_SORT = ['createdAt', 'estimatedLoss', 'quantity', 'issueNo'] as const;
-const CLAIM_SORT = ['createdAt', 'submittedAt', 'claimedAmount', 'settledAmount'] as const;
-const SETTLEMENT_SORT = ['createdAt', 'occurredAt', 'amount', 'quantity'] as const;
+const INSPECTION_SORT = ['createdAt', 'inspectedAt', 'inspectionNo'] as const
+const ISSUE_SORT = ['createdAt', 'estimatedLoss', 'quantity', 'issueNo'] as const
+const CLAIM_SORT = ['createdAt', 'submittedAt', 'claimedAmount', 'settledAmount'] as const
+const SETTLEMENT_SORT = ['createdAt', 'occurredAt', 'amount', 'quantity'] as const
 
 function businessNo(prefix: string): string {
-  return `${prefix}-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
+  return `${prefix}-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`
 }
 
 function decimal(value: string, label: string, allowZero = true): Prisma.Decimal {
-  let parsed: Prisma.Decimal;
+  let parsed: Prisma.Decimal
   try {
-    parsed = new Prisma.Decimal(value);
+    parsed = new Prisma.Decimal(value)
   } catch {
     throw new UnprocessableEntityException({
       code: 'DECIMAL_INVALID',
       message: `${label}格式无效`,
-    });
+    })
   }
   if (!parsed.isFinite() || parsed.isNegative() || (!allowZero && parsed.isZero()))
     throw new UnprocessableEntityException({
       code: 'DECIMAL_INVALID',
       message: `${label}${allowZero ? '不能为负数' : '必须大于 0'}`,
-    });
-  return parsed;
+    })
+  return parsed
 }
 
 function requestHash(value: unknown): string {
-  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex')
 }
 
 @Injectable()
@@ -75,7 +75,7 @@ export class QualityService {
   ) {}
 
   async listPendingReturns(query: QualityQueryDto) {
-    this.assertSort(query.sortBy, ['createdAt', 'occurredAt', 'totalRefund']);
+    this.assertSort(query.sortBy, ['createdAt', 'occurredAt', 'totalRefund'])
     const where: Prisma.SalesReturnWhereInput = {
       status: DocumentStatus.POSTED,
       qualityInspection: null,
@@ -96,7 +96,7 @@ export class QualityService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.salesReturn.findMany({
         where,
@@ -116,8 +116,8 @@ export class QualityService {
         take: query.pageSize,
       }),
       this.prisma.salesReturn.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async createInspection(payload: CreateQualityInspectionDto, actor: AuthUser, requestId?: string) {
@@ -131,16 +131,16 @@ export class QualityService {
           },
         },
       },
-    });
+    })
     if (!salesReturn || salesReturn.status !== DocumentStatus.POSTED)
       throw new ConflictException({
         code: 'RETURN_STATE_INVALID',
         message: '只能质检已接收入库的销售退货',
-      });
+      })
     if (salesReturn.qualityInspection)
-      throw new ConflictException({ code: 'INSPECTION_EXISTS', message: '该销售退货已创建质检单' });
-    const sourceMap = new Map(salesReturn.items.map((item) => [item.id, item]));
-    const itemIds = payload.items.map((item) => item.salesReturnItemId);
+      throw new ConflictException({ code: 'INSPECTION_EXISTS', message: '该销售退货已创建质检单' })
+    const sourceMap = new Map(salesReturn.items.map((item) => [item.id, item]))
+    const itemIds = payload.items.map((item) => item.salesReturnItemId)
     if (
       new Set(itemIds).size !== itemIds.length ||
       itemIds.length !== salesReturn.items.length ||
@@ -149,42 +149,42 @@ export class QualityService {
       throw new UnprocessableEntityException({
         code: 'INSPECTION_ITEMS_INCOMPLETE',
         message: '质检单必须且只能包含该销售退货的全部明细',
-      });
+      })
     const items = payload.items.map((item) => {
-      const source = sourceMap.get(item.salesReturnItemId)!;
-      const goodQuantity = decimal(item.goodQuantity, '良品数量');
-      const defectiveQuantity = decimal(item.defectiveQuantity, '不良品数量');
-      const supplierClaimQuantity = decimal(item.supplierClaimQuantity, '供应商索赔数量');
-      const scrapQuantity = decimal(item.scrapQuantity, '报废数量');
+      const source = sourceMap.get(item.salesReturnItemId)!
+      const goodQuantity = decimal(item.goodQuantity, '良品数量')
+      const defectiveQuantity = decimal(item.defectiveQuantity, '不良品数量')
+      const supplierClaimQuantity = decimal(item.supplierClaimQuantity, '供应商索赔数量')
+      const scrapQuantity = decimal(item.scrapQuantity, '报废数量')
       const inspected = goodQuantity
         .plus(defectiveQuantity)
         .plus(supplierClaimQuantity)
-        .plus(scrapQuantity);
+        .plus(scrapQuantity)
       if (!inspected.equals(source.quantity))
         throw new UnprocessableEntityException({
           code: 'INSPECTION_QUANTITY_MISMATCH',
           message: '良品、不良品、供应商索赔和报废数量之和必须等于退货接收数量',
-        });
-      const badQuantity = defectiveQuantity.plus(supplierClaimQuantity).plus(scrapQuantity);
+        })
+      const badQuantity = defectiveQuantity.plus(supplierClaimQuantity).plus(scrapQuantity)
       if (badQuantity.greaterThan(0) && !item.defectDescription?.trim())
         throw new UnprocessableEntityException({
           code: 'DEFECT_DESCRIPTION_REQUIRED',
           message: '存在非良品数量时必须填写问题描述',
-        });
+        })
       if (supplierClaimQuantity.greaterThan(0)) {
         if (item.responsibility !== QualityResponsibility.SUPPLIER || !item.supplierId)
           throw new UnprocessableEntityException({
             code: 'SUPPLIER_RESPONSIBILITY_REQUIRED',
             message: '供应商索赔数量必须判定为供应商责任并选择供应商',
-          });
+          })
         const traceQuantity = source.batchTraces
           .filter((trace) => trace.batch.supplierId === item.supplierId)
-          .reduce((sum, trace) => sum.plus(trace.quantity), new Prisma.Decimal(0));
+          .reduce((sum, trace) => sum.plus(trace.quantity), new Prisma.Decimal(0))
         if (traceQuantity.lessThan(supplierClaimQuantity))
           throw new UnprocessableEntityException({
             code: 'SUPPLIER_TRACE_INSUFFICIENT',
             message: '所选供应商的原出库批次追溯数量不足',
-          });
+          })
       }
       return {
         salesReturnItemId: source.id,
@@ -196,8 +196,8 @@ export class QualityService {
         supplierId: item.supplierId,
         defectDescription: item.defectDescription?.trim(),
         estimatedLoss: badQuantity.mul(source.unitCost),
-      };
-    });
+      }
+    })
     const data = await this.prisma.qualityInspection.create({
       data: {
         inspectionNo: businessNo('QI'),
@@ -210,7 +210,7 @@ export class QualityService {
         salesReturn: true,
         items: { include: { salesReturnItem: { include: { sku: true } } } },
       },
-    });
+    })
     await this.audit.record({
       userId: actor.id,
       module: 'QUALITY',
@@ -219,8 +219,8 @@ export class QualityService {
       entityId: data.id,
       after: data,
       requestId,
-    });
-    return data;
+    })
+    return data
   }
 
   async confirmInspection(
@@ -242,15 +242,14 @@ export class QualityService {
           },
         },
       },
-    });
-    if (!inspection)
-      throw new NotFoundException({ code: 'NOT_FOUND', message: '质量检验单不存在' });
+    })
+    if (!inspection) throw new NotFoundException({ code: 'NOT_FOUND', message: '质量检验单不存在' })
     if (inspection.status !== QualityInspectionStatus.DRAFT)
-      throw new ConflictException({ code: 'INSPECTION_CONFIRMED', message: '质检单已确认' });
-    await this.assertInspectionDestinations(inspection.items, payload);
-    const lines: PostingLineInput[] = [];
+      throw new ConflictException({ code: 'INSPECTION_CONFIRMED', message: '质检单已确认' })
+    await this.assertInspectionDestinations(inspection.items, payload)
+    const lines: PostingLineInput[] = []
     for (const item of inspection.items) {
-      const source = item.salesReturnItem;
+      const source = item.salesReturnItem
       lines.push({
         locationId: inspection.salesReturn.qcLocationId,
         skuId: source.skuId,
@@ -259,11 +258,11 @@ export class QualityService {
         allocateBatches: false,
         costGroup: item.id,
         remark: `质检分流 ${inspection.inspectionNo}`,
-      });
+      })
       const destinations: Array<{
-        quantity: Prisma.Decimal;
-        locationId?: string;
-        status: InventoryStockStatus;
+        quantity: Prisma.Decimal
+        locationId?: string
+        status: InventoryStockStatus
       }> = [
         {
           quantity: item.goodQuantity,
@@ -285,9 +284,9 @@ export class QualityService {
           locationId: payload.scrapLocationId,
           status: InventoryStockStatus.SCRAPPED,
         },
-      ];
+      ]
       for (const destination of destinations) {
-        if (destination.quantity.lessThanOrEqualTo(0)) continue;
+        if (destination.quantity.lessThanOrEqualTo(0)) continue
         lines.push({
           locationId: destination.locationId!,
           skuId: source.skuId,
@@ -296,7 +295,7 @@ export class QualityService {
           allocateBatches: false,
           costGroup: item.id,
           remark: `质检分流 ${inspection.inspectionNo}`,
-        });
+        })
       }
     }
     return this.posting.post(
@@ -309,38 +308,38 @@ export class QualityService {
         sourceId: id,
         lines,
         finalize: async (transaction, result) => {
-          const locked = await transaction.qualityInspection.findUnique({ where: { id } });
+          const locked = await transaction.qualityInspection.findUnique({ where: { id } })
           if (!locked || locked.status !== QualityInspectionStatus.DRAFT)
-            throw new ConflictException({ code: 'INSPECTION_CONFIRMED', message: '质检单已确认' });
+            throw new ConflictException({ code: 'INSPECTION_CONFIRMED', message: '质检单已确认' })
           const claims = new Map<
             string,
             Array<{ qualityIssueId: string; quantity: Prisma.Decimal; claimAmount: Prisma.Decimal }>
-          >();
+          >()
           for (const item of inspection.items) {
-            const source = item.salesReturnItem;
+            const source = item.salesReturnItem
             await transaction.salesReturnItem.update({
               where: { id: source.id },
               data: { inspectedQuantity: source.quantity },
-            });
-            let restore = item.goodQuantity;
+            })
+            let restore = item.goodQuantity
             for (const trace of source.batchTraces) {
-              if (restore.lessThanOrEqualTo(0)) break;
-              const quantity = Prisma.Decimal.min(trace.quantity, restore);
+              if (restore.lessThanOrEqualTo(0)) break
+              const quantity = Prisma.Decimal.min(trace.quantity, restore)
               await transaction.inventoryBatch.update({
                 where: { id: trace.batchId },
                 data: { remainingQuantity: { increment: quantity } },
-              });
-              restore = restore.minus(quantity);
+              })
+              restore = restore.minus(quantity)
             }
             if (restore.greaterThan(0))
               throw new ConflictException({
                 code: 'BATCH_TRACE_INSUFFICIENT',
                 message: '良品释放时原批次追溯数量不足',
-              });
+              })
             const issueQuantity = item.defectiveQuantity
               .plus(item.supplierClaimQuantity)
-              .plus(item.scrapQuantity);
-            if (issueQuantity.lessThanOrEqualTo(0)) continue;
+              .plus(item.scrapQuantity)
+            if (issueQuantity.lessThanOrEqualTo(0)) continue
             const issue = await transaction.qualityIssue.create({
               data: {
                 issueNo: businessNo('QIS'),
@@ -355,23 +354,23 @@ export class QualityService {
                   ? QualityIssueStatus.CLAIMED
                   : QualityIssueStatus.OPEN,
               },
-            });
+            })
             if (item.supplierClaimQuantity.greaterThan(0) && item.supplierId) {
-              const claimAmount = item.supplierClaimQuantity.mul(source.unitCost);
-              const parts = claims.get(item.supplierId) ?? [];
+              const claimAmount = item.supplierClaimQuantity.mul(source.unitCost)
+              const parts = claims.get(item.supplierId) ?? []
               parts.push({
                 qualityIssueId: issue.id,
                 quantity: item.supplierClaimQuantity,
                 claimAmount,
-              });
-              claims.set(item.supplierId, parts);
+              })
+              claims.set(item.supplierId, parts)
             }
           }
           for (const [supplierId, parts] of claims) {
             const claimedAmount = parts.reduce(
               (sum, part) => sum.plus(part.claimAmount),
               new Prisma.Decimal(0),
-            );
+            )
             await transaction.supplierClaim.create({
               data: {
                 claimNo: businessNo('SCL'),
@@ -381,27 +380,27 @@ export class QualityService {
                 remark: `由质检单 ${inspection.inspectionNo} 自动生成`,
                 items: { create: parts },
               },
-            });
+            })
           }
           await transaction.qualityInventoryMovement.create({
             data: { qualityInspectionId: id, transactionId: result.transactionId },
-          });
+          })
           await transaction.qualityInspection.update({
             where: { id },
             data: {
               status: QualityInspectionStatus.CONFIRMED,
               confirmedAt: new Date(result.postedAt),
             },
-          });
+          })
         },
       },
       actor,
       requestId,
-    );
+    )
   }
 
   async listInspections(query: QualityQueryDto) {
-    this.assertSort(query.sortBy, INSPECTION_SORT);
+    this.assertSort(query.sortBy, INSPECTION_SORT)
     const where: Prisma.QualityInspectionWhereInput = {
       ...(query.documentStatus ? { status: query.documentStatus as QualityInspectionStatus } : {}),
       ...(query.createdFrom || query.createdTo
@@ -420,7 +419,7 @@ export class QualityService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.qualityInspection.findMany({
         where,
@@ -434,12 +433,12 @@ export class QualityService {
         take: query.pageSize,
       }),
       this.prisma.qualityInspection.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async listIssues(query: QualityQueryDto) {
-    this.assertSort(query.sortBy, ISSUE_SORT);
+    this.assertSort(query.sortBy, ISSUE_SORT)
     const where: Prisma.QualityIssueWhereInput = {
       ...(query.supplierId ? { supplierId: query.supplierId } : {}),
       ...(query.skuId ? { skuId: query.skuId } : {}),
@@ -454,7 +453,7 @@ export class QualityService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.qualityIssue.findMany({
         where,
@@ -471,12 +470,12 @@ export class QualityService {
         take: query.pageSize,
       }),
       this.prisma.qualityIssue.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async listClaims(query: QualityQueryDto) {
-    this.assertSort(query.sortBy, CLAIM_SORT);
+    this.assertSort(query.sortBy, CLAIM_SORT)
     const where: Prisma.SupplierClaimWhereInput = {
       ...(query.supplierId ? { supplierId: query.supplierId } : {}),
       ...(query.documentStatus ? { status: query.documentStatus as SupplierClaimStatus } : {}),
@@ -488,7 +487,7 @@ export class QualityService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.supplierClaim.findMany({
         where,
@@ -502,12 +501,12 @@ export class QualityService {
         take: query.pageSize,
       }),
       this.prisma.supplierClaim.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async listSettlements(query: QualityQueryDto) {
-    this.assertSort(query.sortBy, SETTLEMENT_SORT);
+    this.assertSort(query.sortBy, SETTLEMENT_SORT)
     const where: Prisma.SupplierClaimSettlementWhereInput = {
       ...(query.resolutionType ? { resolutionType: query.resolutionType } : {}),
       ...(query.documentStatus ? { status: query.documentStatus as DocumentStatus } : {}),
@@ -520,7 +519,7 @@ export class QualityService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.supplierClaimSettlement.findMany({
         where,
@@ -538,12 +537,12 @@ export class QualityService {
         take: query.pageSize,
       }),
       this.prisma.supplierClaimSettlement.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async listQualityStock(query: QualityQueryDto) {
-    this.assertSort(query.sortBy, ['updatedAt', 'onHandQuantity', 'inventoryValue']);
+    this.assertSort(query.sortBy, ['updatedAt', 'onHandQuantity', 'inventoryValue'])
     const where: Prisma.InventoryBalanceWhereInput = {
       stockStatus: {
         in: [
@@ -564,7 +563,7 @@ export class QualityService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.inventoryBalance.findMany({
         where,
@@ -574,8 +573,8 @@ export class QualityService {
         take: query.pageSize,
       }),
       this.prisma.inventoryBalance.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async listCompensationReceivables(query: QualityQueryDto) {
@@ -584,7 +583,7 @@ export class QualityService {
       'occurredAt',
       'outstandingAmount',
       'originalAmount',
-    ]);
+    ])
     const where: Prisma.SupplierCompensationReceivableWhereInput = {
       ...(query.supplierId ? { supplierId: query.supplierId } : {}),
       ...(query.keyword
@@ -595,7 +594,7 @@ export class QualityService {
             ],
           }
         : {}),
-    };
+    }
     const [data, total] = await this.prisma.$transaction([
       this.prisma.supplierCompensationReceivable.findMany({
         where,
@@ -605,8 +604,8 @@ export class QualityService {
         take: query.pageSize,
       }),
       this.prisma.supplierCompensationReceivable.count({ where }),
-    ]);
-    return { data, meta: paginationMeta(query.page, query.pageSize, total) };
+    ])
+    return { data, meta: paginationMeta(query.page, query.pageSize, total) }
   }
 
   async settleClaim(
@@ -620,18 +619,18 @@ export class QualityService {
       throw new UnprocessableEntityException({
         code: 'IDEMPOTENCY_KEY_REQUIRED',
         message: '索赔处理必须提供 Idempotency-Key',
-      });
-    const scope = `CLAIM_SETTLEMENT_CREATE:${claimId}`;
+      })
+    const scope = `CLAIM_SETTLEMENT_CREATE:${claimId}`
     const existing = await this.prisma.idempotencyRecord.findUnique({
       where: { scope_key: { scope, key: idempotencyKey } },
-    });
+    })
     if (existing) {
       if (existing.requestHash !== requestHash(payload))
         throw new ConflictException({
           code: 'IDEMPOTENCY_CONFLICT',
           message: '相同幂等键已用于不同索赔处理内容',
-        });
-      const settlementId = String((existing.responseJson as { settlementId: string }).settlementId);
+        })
+      const settlementId = String((existing.responseJson as { settlementId: string }).settlementId)
       return this.prisma.supplierClaimSettlement.findUniqueOrThrow({
         where: { id: settlementId },
         include: {
@@ -640,7 +639,7 @@ export class QualityService {
           supplierCredit: true,
           compensationReceivable: true,
         },
-      });
+      })
     }
     const claim = await this.prisma.supplierClaim.findUnique({
       where: { id: claimId },
@@ -656,24 +655,24 @@ export class QualityService {
           },
         },
       },
-    });
-    if (!claim) throw new NotFoundException({ code: 'NOT_FOUND', message: '供应商索赔单不存在' });
+    })
+    if (!claim) throw new NotFoundException({ code: 'NOT_FOUND', message: '供应商索赔单不存在' })
     if (
       claim.status === SupplierClaimStatus.SETTLED ||
       claim.status === SupplierClaimStatus.REJECTED ||
       claim.status === SupplierClaimStatus.CLOSED
     )
-      throw new ConflictException({ code: 'CLAIM_CLOSED', message: '供应商索赔已结案' });
+      throw new ConflictException({ code: 'CLAIM_CLOSED', message: '供应商索赔已结案' })
     const claimItem = payload.supplierClaimItemId
       ? claim.items.find((item) => item.id === payload.supplierClaimItemId)
-      : undefined;
+      : undefined
     if (payload.supplierClaimItemId && !claimItem)
       throw new UnprocessableEntityException({
         code: 'CLAIM_ITEM_INVALID',
         message: '索赔明细不属于当前索赔单',
-      });
-    const prepared = this.validateSettlement(claim, claimItem, payload);
-    const settlementId = await this.prepareSettlement(claimId, payload, idempotencyKey, prepared);
+      })
+    const prepared = this.validateSettlement(claim, claimItem, payload)
+    const settlementId = await this.prepareSettlement(claimId, payload, idempotencyKey, prepared)
     const settlement = await this.prisma.supplierClaimSettlement.findUniqueOrThrow({
       where: { id: settlementId },
       include: {
@@ -686,15 +685,15 @@ export class QualityService {
           },
         },
       },
-    });
-    if (settlement.status === DocumentStatus.POSTED) return settlement;
+    })
+    if (settlement.status === DocumentStatus.POSTED) return settlement
     if (
       settlement.resolutionType === ClaimResolutionType.REPLACEMENT ||
       settlement.resolutionType === ClaimResolutionType.SCRAP
     ) {
-      await this.postInventorySettlement(settlement, idempotencyKey, actor, requestId);
+      await this.postInventorySettlement(settlement, idempotencyKey, actor, requestId)
     } else {
-      await this.postNonInventorySettlement(settlement, actor, requestId);
+      await this.postNonInventorySettlement(settlement, actor, requestId)
     }
     return this.prisma.supplierClaimSettlement.findUniqueOrThrow({
       where: { id: settlement.id },
@@ -704,12 +703,12 @@ export class QualityService {
         supplierCredit: true,
         compensationReceivable: true,
       },
-    });
+    })
   }
 
   async analytics(query: QualityQueryDto) {
-    const from = query.createdFrom ? new Date(query.createdFrom) : undefined;
-    const to = query.createdTo ? new Date(query.createdTo) : undefined;
+    const from = query.createdFrom ? new Date(query.createdFrom) : undefined
+    const to = query.createdTo ? new Date(query.createdTo) : undefined
     const [issues, claimRows, issueRows] = await Promise.all([
       this.prisma.qualityIssue.findMany({
         where: {
@@ -731,20 +730,20 @@ export class QualityService {
       this.prisma.salesIssueItem.findMany({
         include: { sku: true, salesIssue: { include: { salesChannel: true } } },
       }),
-    ]);
+    ])
     const supplierMap = new Map<
       string,
       {
-        supplierId: string;
-        supplierName: string;
-        issueQuantity: Prisma.Decimal;
-        loss: Prisma.Decimal;
-        claims: number;
-        settled: number;
+        supplierId: string
+        supplierName: string
+        issueQuantity: Prisma.Decimal
+        loss: Prisma.Decimal
+        claims: number
+        settled: number
       }
-    >();
+    >()
     for (const issue of issues) {
-      if (!issue.supplier) continue;
+      if (!issue.supplier) continue
       const row = supplierMap.get(issue.supplierId!) ?? {
         supplierId: issue.supplierId!,
         supplierName: issue.supplier.name,
@@ -752,10 +751,10 @@ export class QualityService {
         loss: new Prisma.Decimal(0),
         claims: 0,
         settled: 0,
-      };
-      row.issueQuantity = row.issueQuantity.plus(issue.quantity);
-      row.loss = row.loss.plus(issue.estimatedLoss);
-      supplierMap.set(issue.supplierId!, row);
+      }
+      row.issueQuantity = row.issueQuantity.plus(issue.quantity)
+      row.loss = row.loss.plus(issue.estimatedLoss)
+      supplierMap.set(issue.supplierId!, row)
     }
     for (const claim of claimRows) {
       const row = supplierMap.get(claim.supplierId) ?? {
@@ -765,21 +764,21 @@ export class QualityService {
         loss: new Prisma.Decimal(0),
         claims: 0,
         settled: 0,
-      };
-      row.claims += 1;
-      if (claim.status === SupplierClaimStatus.SETTLED) row.settled += 1;
-      supplierMap.set(claim.supplierId, row);
+      }
+      row.claims += 1
+      if (claim.status === SupplierClaimStatus.SETTLED) row.settled += 1
+      supplierMap.set(claim.supplierId, row)
     }
     const skuMap = new Map<
       string,
       {
-        skuId: string;
-        skuCode: string;
-        skuName: string;
-        issued: Prisma.Decimal;
-        returned: Prisma.Decimal;
+        skuId: string
+        skuCode: string
+        skuName: string
+        issued: Prisma.Decimal
+        returned: Prisma.Decimal
       }
-    >();
+    >()
     for (const item of issueRows) {
       const row = skuMap.get(item.skuId) ?? {
         skuId: item.skuId,
@@ -787,10 +786,10 @@ export class QualityService {
         skuName: item.sku.name,
         issued: new Prisma.Decimal(0),
         returned: new Prisma.Decimal(0),
-      };
-      row.issued = row.issued.plus(item.quantity);
-      row.returned = row.returned.plus(item.returnedQuantity);
-      skuMap.set(item.skuId, row);
+      }
+      row.issued = row.issued.plus(item.quantity)
+      row.returned = row.returned.plus(item.returnedQuantity)
+      skuMap.set(item.skuId, row)
     }
     return {
       summary: {
@@ -821,15 +820,15 @@ export class QualityService {
           ? row.returned.div(row.issued)
           : new Prisma.Decimal(0),
       })),
-    };
+    }
   }
 
   private async assertInspectionDestinations(
     items: Array<{
-      goodQuantity: Prisma.Decimal;
-      defectiveQuantity: Prisma.Decimal;
-      supplierClaimQuantity: Prisma.Decimal;
-      scrapQuantity: Prisma.Decimal;
+      goodQuantity: Prisma.Decimal
+      defectiveQuantity: Prisma.Decimal
+      supplierClaimQuantity: Prisma.Decimal
+      scrapQuantity: Prisma.Decimal
     }>,
     payload: ConfirmQualityInspectionDto,
   ) {
@@ -858,17 +857,17 @@ export class QualityService {
         InventoryLocationType.SCRAP_AREA,
         '报废',
       ],
-    ];
+    ]
     for (const [required, locationId, expectedType, label] of rules) {
-      if (!required) continue;
+      if (!required) continue
       if (!locationId)
         throw new UnprocessableEntityException({
           code: 'DESTINATION_REQUIRED',
           message: `${label}数量大于 0 时必须选择目标地点`,
-        });
+        })
       const location = await this.prisma.inventoryLocation.findUnique({
         where: { id: locationId },
-      });
+      })
       if (
         !location ||
         !location.isLeaf ||
@@ -878,7 +877,7 @@ export class QualityService {
         throw new UnprocessableEntityException({
           code: 'DESTINATION_INVALID',
           message: `${label}目标地点类型或状态无效`,
-        });
+        })
     }
   }
 
@@ -886,22 +885,22 @@ export class QualityService {
     claim: { claimedAmount: Prisma.Decimal; settledAmount: Prisma.Decimal },
     claimItem:
       | {
-          quantity: Prisma.Decimal;
-          claimAmount: Prisma.Decimal;
+          quantity: Prisma.Decimal
+          claimAmount: Prisma.Decimal
           settlements: Array<{
-            quantity: Prisma.Decimal | null;
-            disposeQuantity: Prisma.Decimal | null;
-            status: DocumentStatus;
-          }>;
+            quantity: Prisma.Decimal | null
+            disposeQuantity: Prisma.Decimal | null
+            status: DocumentStatus
+          }>
         }
       | undefined,
     payload: CreateClaimSettlementDto,
   ) {
-    const amount = payload.amount ? decimal(payload.amount, '处理金额', false) : null;
-    const quantity = payload.quantity ? decimal(payload.quantity, '换货/处理数量', false) : null;
+    const amount = payload.amount ? decimal(payload.amount, '处理金额', false) : null
+    const quantity = payload.quantity ? decimal(payload.quantity, '换货/处理数量', false) : null
     const disposeQuantity = payload.disposeQuantity
       ? decimal(payload.disposeQuantity, '处置数量', false)
-      : null;
+      : null
     if (
       (payload.resolutionType === ClaimResolutionType.REPLACEMENT ||
         payload.resolutionType === ClaimResolutionType.SCRAP) &&
@@ -910,20 +909,20 @@ export class QualityService {
       throw new UnprocessableEntityException({
         code: 'CLAIM_ITEM_REQUIRED',
         message: '换货或索赔品报废必须选择索赔明细',
-      });
+      })
     if (payload.resolutionType === ClaimResolutionType.REPLACEMENT) {
       if (!quantity || !payload.replacementLocationId || !payload.batchNo?.trim())
         throw new UnprocessableEntityException({
           code: 'REPLACEMENT_FIELDS_REQUIRED',
           message: '换货必须填写数量、入库地点和新批次号',
-        });
+        })
     }
     if (payload.resolutionType === ClaimResolutionType.SCRAP) {
       if (!quantity || !payload.claimStockLocationId || !payload.scrapLocationId)
         throw new UnprocessableEntityException({
           code: 'SCRAP_FIELDS_REQUIRED',
           message: '索赔品报废必须填写数量、索赔品地点和报废地点',
-        });
+        })
     }
     if (
       (payload.resolutionType === ClaimResolutionType.CASH_COMPENSATION ||
@@ -933,31 +932,31 @@ export class QualityService {
       throw new UnprocessableEntityException({
         code: 'SETTLEMENT_AMOUNT_REQUIRED',
         message: '现金赔付或下次抵扣必须填写处理金额',
-      });
+      })
     if (claimItem && quantity) {
       const used = claimItem.settlements
         .filter((settlement) => settlement.status === DocumentStatus.POSTED)
         .reduce(
           (sum, settlement) => sum.plus(settlement.quantity ?? new Prisma.Decimal(0)),
           new Prisma.Decimal(0),
-        );
+        )
       if (used.plus(quantity).greaterThan(claimItem.quantity))
         throw new UnprocessableEntityException({
           code: 'SETTLEMENT_QUANTITY_EXCEEDED',
           message: '处理数量超过索赔明细剩余数量',
-        });
+        })
     }
     const proportionalAmount =
       claimItem && quantity
         ? claimItem.claimAmount.mul(quantity).div(claimItem.quantity)
-        : new Prisma.Decimal(0);
-    const settlementAmount = amount ?? proportionalAmount;
+        : new Prisma.Decimal(0)
+    const settlementAmount = amount ?? proportionalAmount
     if (claim.settledAmount.plus(settlementAmount).greaterThan(claim.claimedAmount))
       throw new UnprocessableEntityException({
         code: 'SETTLEMENT_AMOUNT_EXCEEDED',
         message: '累计赔付金额不能超过索赔金额',
-      });
-    return { amount: settlementAmount, quantity, disposeQuantity };
+      })
+    return { amount: settlementAmount, quantity, disposeQuantity }
   }
 
   private async prepareSettlement(
@@ -965,31 +964,31 @@ export class QualityService {
     payload: CreateClaimSettlementDto,
     idempotencyKey: string,
     prepared: {
-      amount: Prisma.Decimal;
-      quantity: Prisma.Decimal | null;
-      disposeQuantity: Prisma.Decimal | null;
+      amount: Prisma.Decimal
+      quantity: Prisma.Decimal | null
+      disposeQuantity: Prisma.Decimal | null
     },
   ) {
-    const scope = `CLAIM_SETTLEMENT_CREATE:${claimId}`;
-    const hash = requestHash(payload);
+    const scope = `CLAIM_SETTLEMENT_CREATE:${claimId}`
+    const hash = requestHash(payload)
     return serializableTransaction(this.prisma, async (transaction) => {
       const existing = await transaction.idempotencyRecord.findUnique({
         where: { scope_key: { scope, key: idempotencyKey } },
-      });
+      })
       if (existing) {
         if (existing.requestHash !== hash)
           throw new ConflictException({
             code: 'IDEMPOTENCY_CONFLICT',
             message: '相同幂等键已用于不同索赔处理内容',
-          });
-        return String((existing.responseJson as { settlementId: string }).settlementId);
+          })
+        return String((existing.responseJson as { settlementId: string }).settlementId)
       }
       if (payload.batchNo) {
         const exists = await transaction.inventoryBatch.findUnique({
           where: { batchNo: payload.batchNo.trim() },
-        });
+        })
         if (exists)
-          throw new ConflictException({ code: 'BATCH_EXISTS', message: '换货批次号已存在' });
+          throw new ConflictException({ code: 'BATCH_EXISTS', message: '换货批次号已存在' })
       }
       const settlement = await transaction.supplierClaimSettlement.create({
         data: {
@@ -1007,7 +1006,7 @@ export class QualityService {
           occurredAt: new Date(payload.occurredAt),
           remark: payload.remark,
         },
-      });
+      })
       await transaction.idempotencyRecord.create({
         data: {
           scope,
@@ -1017,44 +1016,44 @@ export class QualityService {
           statusCode: 201,
           expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         },
-      });
-      return settlement.id;
-    });
+      })
+      return settlement.id
+    })
   }
 
   private async postInventorySettlement(
     settlement: {
-      id: string;
-      resolutionType: ClaimResolutionType;
-      quantity: Prisma.Decimal | null;
-      amount: Prisma.Decimal | null;
-      batchNo: string | null;
-      replacementLocationId: string | null;
-      claimStockLocationId: string | null;
-      scrapLocationId: string | null;
-      disposeQuantity: Prisma.Decimal | null;
-      occurredAt: Date;
+      id: string
+      resolutionType: ClaimResolutionType
+      quantity: Prisma.Decimal | null
+      amount: Prisma.Decimal | null
+      batchNo: string | null
+      replacementLocationId: string | null
+      claimStockLocationId: string | null
+      scrapLocationId: string | null
+      disposeQuantity: Prisma.Decimal | null
+      occurredAt: Date
       supplierClaim: {
-        id: string;
-        supplierId: string;
-        claimedAmount: Prisma.Decimal;
-        settledAmount: Prisma.Decimal;
-      };
+        id: string
+        supplierId: string
+        claimedAmount: Prisma.Decimal
+        settledAmount: Prisma.Decimal
+      }
       supplierClaimItem: {
-        id: string;
+        id: string
         qualityIssue: {
-          skuId: string;
-          qualityInspectionItem: { salesReturnItem: { unitCost: Prisma.Decimal } };
-        };
-      } | null;
+          skuId: string
+          qualityInspectionItem: { salesReturnItem: { unitCost: Prisma.Decimal } }
+        }
+      } | null
     },
     idempotencyKey: string,
     actor: AuthUser,
     requestId?: string,
   ) {
-    const item = settlement.supplierClaimItem!;
-    const unitCost = item.qualityIssue.qualityInspectionItem.salesReturnItem.unitCost;
-    const lines: PostingLineInput[] = [];
+    const item = settlement.supplierClaimItem!
+    const unitCost = item.qualityIssue.qualityInspectionItem.salesReturnItem.unitCost
+    const lines: PostingLineInput[] = []
     if (settlement.resolutionType === ClaimResolutionType.REPLACEMENT) {
       lines.push({
         locationId: settlement.replacementLocationId!,
@@ -1064,13 +1063,13 @@ export class QualityService {
         unitCost,
         allocateBatches: false,
         remark: '供应商换货补发，无采购应付',
-      });
+      })
       if (settlement.disposeQuantity?.greaterThan(0)) {
         if (!settlement.claimStockLocationId || !settlement.scrapLocationId)
           throw new UnprocessableEntityException({
             code: 'DISPOSAL_LOCATION_REQUIRED',
             message: '换货同时报废原索赔品时必须选择索赔品和报废地点',
-          });
+          })
         lines.push(
           {
             locationId: settlement.claimStockLocationId,
@@ -1088,7 +1087,7 @@ export class QualityService {
             allocateBatches: false,
             costGroup: settlement.id,
           },
-        );
+        )
       }
     } else {
       lines.push(
@@ -1108,7 +1107,7 @@ export class QualityService {
           allocateBatches: false,
           costGroup: settlement.id,
         },
-      );
+      )
     }
     await this.posting.post(
       {
@@ -1137,9 +1136,9 @@ export class QualityService {
         finalize: async (transaction, result) => {
           const locked = await transaction.supplierClaimSettlement.findUnique({
             where: { id: settlement.id },
-          });
+          })
           if (!locked || locked.status !== DocumentStatus.DRAFT)
-            throw new ConflictException({ code: 'SETTLEMENT_POSTED', message: '索赔处理已过账' });
+            throw new ConflictException({ code: 'SETTLEMENT_POSTED', message: '索赔处理已过账' })
           await transaction.supplierClaimSettlement.update({
             where: { id: settlement.id },
             data: {
@@ -1147,32 +1146,32 @@ export class QualityService {
               inventoryTransactionId: result.transactionId,
               postedAt: new Date(result.postedAt),
             },
-          });
+          })
           await this.applyClaimSettlement(
             transaction,
             settlement.supplierClaim,
             settlement.amount ?? new Prisma.Decimal(0),
             settlement.resolutionType,
-          );
+          )
         },
       },
       actor,
       requestId,
-    );
+    )
   }
 
   private async postNonInventorySettlement(
     settlement: {
-      id: string;
-      resolutionType: ClaimResolutionType;
-      amount: Prisma.Decimal | null;
-      occurredAt: Date;
+      id: string
+      resolutionType: ClaimResolutionType
+      amount: Prisma.Decimal | null
+      occurredAt: Date
       supplierClaim: {
-        id: string;
-        supplierId: string;
-        claimedAmount: Prisma.Decimal;
-        settledAmount: Prisma.Decimal;
-      };
+        id: string
+        supplierId: string
+        claimedAmount: Prisma.Decimal
+        settledAmount: Prisma.Decimal
+      }
     },
     actor: AuthUser,
     requestId?: string,
@@ -1180,9 +1179,9 @@ export class QualityService {
     await serializableTransaction(this.prisma, async (transaction) => {
       const locked = await transaction.supplierClaimSettlement.findUnique({
         where: { id: settlement.id },
-      });
-      if (!locked || locked.status !== DocumentStatus.DRAFT) return;
-      const amount = settlement.amount ?? new Prisma.Decimal(0);
+      })
+      if (!locked || locked.status !== DocumentStatus.DRAFT) return
+      const amount = settlement.amount ?? new Prisma.Decimal(0)
       if (settlement.resolutionType === ClaimResolutionType.CASH_COMPENSATION) {
         await transaction.supplierCompensationReceivable.create({
           data: {
@@ -1193,7 +1192,7 @@ export class QualityService {
             outstandingAmount: amount,
             occurredAt: settlement.occurredAt,
           },
-        });
+        })
       }
       if (settlement.resolutionType === ClaimResolutionType.CREDIT_COMPENSATION) {
         await transaction.supplierCredit.create({
@@ -1203,19 +1202,19 @@ export class QualityService {
             supplierClaimSettlementId: settlement.id,
             amount,
           },
-        });
+        })
       }
       await transaction.supplierClaimSettlement.update({
         where: { id: settlement.id },
         data: { status: DocumentStatus.POSTED, postedAt: new Date() },
-      });
+      })
       await this.applyClaimSettlement(
         transaction,
         settlement.supplierClaim,
         amount,
         settlement.resolutionType,
-      );
-    });
+      )
+    })
     await this.audit.record({
       userId: actor.id,
       module: 'QUALITY',
@@ -1224,7 +1223,7 @@ export class QualityService {
       entityId: settlement.id,
       after: { resolutionType: settlement.resolutionType, amount: settlement.amount },
       requestId,
-    });
+    })
   }
 
   private async applyClaimSettlement(
@@ -1233,18 +1232,18 @@ export class QualityService {
     amount: Prisma.Decimal,
     resolutionType: ClaimResolutionType,
   ) {
-    const settledAmount = claim.settledAmount.plus(amount);
-    let status: SupplierClaimStatus;
-    if (resolutionType === ClaimResolutionType.REJECTED) status = SupplierClaimStatus.REJECTED;
+    const settledAmount = claim.settledAmount.plus(amount)
+    let status: SupplierClaimStatus
+    if (resolutionType === ClaimResolutionType.REJECTED) status = SupplierClaimStatus.REJECTED
     else if (
       resolutionType === ClaimResolutionType.SELF_BEAR ||
       resolutionType === ClaimResolutionType.SCRAP
     )
-      status = SupplierClaimStatus.CLOSED;
+      status = SupplierClaimStatus.CLOSED
     else
       status = settledAmount.greaterThanOrEqualTo(claim.claimedAmount)
         ? SupplierClaimStatus.SETTLED
-        : SupplierClaimStatus.PARTIALLY_SETTLED;
+        : SupplierClaimStatus.PARTIALLY_SETTLED
     await transaction.supplierClaim.update({
       where: { id: claim.id },
       data: {
@@ -1256,7 +1255,7 @@ export class QualityService {
           ? { closedAt: new Date() }
           : {}),
       },
-    });
+    })
     if (
       status === SupplierClaimStatus.SETTLED ||
       status === SupplierClaimStatus.REJECTED ||
@@ -1265,12 +1264,12 @@ export class QualityService {
       await transaction.qualityIssue.updateMany({
         where: { claimItem: { supplierClaimId: claim.id } },
         data: { status: QualityIssueStatus.RESOLVED },
-      });
+      })
     }
   }
 
   private assertSort(sortBy: string, whitelist: readonly string[]) {
     if (!whitelist.includes(sortBy))
-      throw new BadRequestException({ code: 'SORT_INVALID', message: '排序字段不在白名单中' });
+      throw new BadRequestException({ code: 'SORT_INVALID', message: '排序字段不在白名单中' })
   }
 }

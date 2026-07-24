@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ListParams } from '@/features/master-data/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { ListParams } from '@/features/master-data/api'
 import {
   confirmInspection,
   createInspection,
@@ -7,18 +7,18 @@ import {
   listQuality,
   settleClaim,
   type QualityView,
-} from './api';
+} from './api'
 
 const qualityKeys = {
   all: ['quality'] as const,
   list: (view: QualityView, params: ListParams) => ['quality', view, params] as const,
-};
+}
 
 export function useQualityList(view: Exclude<QualityView, 'analytics'>, params: ListParams) {
   return useQuery({
     queryKey: qualityKeys.list(view, params),
     queryFn: () => listQuality(view, params),
-  });
+  })
 }
 
 export function useQualityOptions(view: 'pending' | 'claims') {
@@ -27,12 +27,12 @@ export function useQualityOptions(view: 'pending' | 'claims') {
     pageSize: 100,
     sortBy: view === 'pending' ? 'occurredAt' : 'submittedAt',
     sortOrder: 'desc',
-  };
+  }
   return useQuery({
     queryKey: qualityKeys.list(view, params),
     queryFn: () => listQuality(view, params),
     staleTime: 10_000,
-  });
+  })
 }
 
 export function useQualityAnalytics(params: ListParams, enabled: boolean) {
@@ -40,12 +40,12 @@ export function useQualityAnalytics(params: ListParams, enabled: boolean) {
     queryKey: qualityKeys.list('analytics', params),
     queryFn: () => getQualityAnalytics(params),
     enabled,
-  });
+  })
 }
 
 export function useQualityMutations() {
-  const client = useQueryClient();
-  const refresh = () => client.invalidateQueries({ queryKey: qualityKeys.all });
+  const client = useQueryClient()
+  const refresh = () => client.invalidateQueries({ queryKey: qualityKeys.all })
   return {
     inspection: useMutation({ mutationFn: createInspection, onSuccess: refresh }),
     confirm: useMutation({
@@ -58,5 +58,5 @@ export function useQualityMutations() {
         settleClaim(id, payload),
       onSuccess: refresh,
     }),
-  };
+  }
 }

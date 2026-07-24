@@ -1,17 +1,17 @@
-import { Dialog } from '@base-ui/react/dialog';
-import { X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useToast } from '@/components/feedback/toast-provider';
-import { Button } from '@/components/ui/button';
-import { DatePickerInput, today } from '@/components/ui/date-picker';
-import { Field, Input, Select, Textarea } from '@/components/ui/field';
-import { useInventoryList } from '@/features/inventory/use-inventory';
-import type { MasterRow } from '@/features/master-data/api';
-import { useMasterOptions } from '@/features/master-data/use-master-data';
-import { apiErrorMessage } from '@/lib/api-error';
-import { useQualityMutations, useQualityOptions } from './use-quality';
+import { Dialog } from '@base-ui/react/dialog'
+import { X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useToast } from '@/components/feedback/toast-provider'
+import { Button } from '@/components/ui/button'
+import { DatePickerInput, today } from '@/components/ui/date-picker'
+import { Field, Input, Select, Textarea } from '@/components/ui/field'
+import { useInventoryList } from '@/features/inventory/use-inventory'
+import type { MasterRow } from '@/features/master-data/api'
+import { useMasterOptions } from '@/features/master-data/use-master-data'
+import { apiErrorMessage } from '@/lib/api-error'
+import { useQualityMutations, useQualityOptions } from './use-quality'
 
-export type QualityDialogKind = 'inspection' | 'settlement';
+export type QualityDialogKind = 'inspection' | 'settlement'
 
 function Shell({
   open,
@@ -20,11 +20,11 @@ function Shell({
   description,
   children,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  children: React.ReactNode;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+  children: React.ReactNode
 }) {
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
@@ -46,7 +46,7 @@ function Shell({
         </Dialog.Viewport>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }
 
 function Options({ rows }: { rows?: MasterRow[] }) {
@@ -54,42 +54,42 @@ function Options({ rows }: { rows?: MasterRow[] }) {
     <option key={row.id} value={row.id}>
       {row.code} · {row.name}
     </option>
-  ));
+  ))
 }
 
 interface Classification {
-  goodQuantity: string;
-  defectiveQuantity: string;
-  supplierClaimQuantity: string;
-  scrapQuantity: string;
-  responsibility: string;
-  supplierId: string;
-  defectDescription: string;
+  goodQuantity: string
+  defectiveQuantity: string
+  supplierClaimQuantity: string
+  scrapQuantity: string
+  responsibility: string
+  supplierId: string
+  defectDescription: string
 }
 
 function InspectionDialog({ open, onOpenChange }: DialogProps) {
-  const pendingQuery = useQualityOptions('pending');
-  const suppliers = useMasterOptions('suppliers');
+  const pendingQuery = useQualityOptions('pending')
+  const suppliers = useMasterOptions('suppliers')
   const locations = useInventoryList('locations', {
     page: 1,
     pageSize: 100,
     sortBy: 'code',
     sortOrder: 'asc',
     status: 'ACTIVE',
-  });
-  const mutations = useQualityMutations();
-  const notify = useToast();
-  const [salesReturnId, setSalesReturnId] = useState('');
-  const [inspectedAt, setInspectedAt] = useState(today());
-  const [notes, setNotes] = useState('');
-  const [availableLocationId, setAvailableLocationId] = useState('');
-  const [defectiveLocationId, setDefectiveLocationId] = useState('');
-  const [claimLocationId, setClaimLocationId] = useState('');
-  const [scrapLocationId, setScrapLocationId] = useState('');
-  const [classifications, setClassifications] = useState<Record<string, Classification>>({});
-  const returns = pendingQuery.data?.data ?? [];
-  const selected = returns.find((row) => row.id === salesReturnId);
-  const items = useMemo(() => (selected?.items as MasterRow[] | undefined) ?? [], [selected]);
+  })
+  const mutations = useQualityMutations()
+  const notify = useToast()
+  const [salesReturnId, setSalesReturnId] = useState('')
+  const [inspectedAt, setInspectedAt] = useState(today())
+  const [notes, setNotes] = useState('')
+  const [availableLocationId, setAvailableLocationId] = useState('')
+  const [defectiveLocationId, setDefectiveLocationId] = useState('')
+  const [claimLocationId, setClaimLocationId] = useState('')
+  const [scrapLocationId, setScrapLocationId] = useState('')
+  const [classifications, setClassifications] = useState<Record<string, Classification>>({})
+  const returns = pendingQuery.data?.data ?? []
+  const selected = returns.find((row) => row.id === salesReturnId)
+  const items = useMemo(() => (selected?.items as MasterRow[] | undefined) ?? [], [selected])
 
   useEffect(() => {
     setClassifications(
@@ -107,20 +107,20 @@ function InspectionDialog({ open, onOpenChange }: DialogProps) {
           },
         ]),
       ),
-    );
-  }, [items]);
+    )
+  }, [items])
 
   const update = (id: string, field: keyof Classification, value: string) =>
     setClassifications((current) => ({
       ...current,
       [id]: { ...current[id], [field]: value },
-    }));
+    }))
 
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (!salesReturnId || !items.length) {
-      notify('请选择待质检销售退货', 'error');
-      return;
+      notify('请选择待质检销售退货', 'error')
+      return
     }
     try {
       const inspection = await mutations.inspection.mutateAsync({
@@ -133,7 +133,7 @@ function InspectionDialog({ open, onOpenChange }: DialogProps) {
           supplierId: classifications[item.id].supplierId || undefined,
           defectDescription: classifications[item.id].defectDescription || undefined,
         })),
-      });
+      })
       await mutations.confirm.mutateAsync({
         id: inspection.id,
         payload: {
@@ -142,16 +142,16 @@ function InspectionDialog({ open, onOpenChange }: DialogProps) {
           claimLocationId: claimLocationId || undefined,
           scrapLocationId: scrapLocationId || undefined,
         },
-      });
-      notify('质检已确认，库存分流与供应商索赔已同步', 'success');
-      setSalesReturnId('');
-      onOpenChange(false);
+      })
+      notify('质检已确认，库存分流与供应商索赔已同步', 'success')
+      setSalesReturnId('')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
 
-  const locationRows = locations.data?.data;
+  const locationRows = locations.data?.data
   return (
     <Shell
       description="每行必须满足接收数量守恒；确认后从待质检库存分流，供应商责任会自动形成索赔。"
@@ -216,8 +216,8 @@ function InspectionDialog({ open, onOpenChange }: DialogProps) {
         </div>
         <div className="quality-classification-list">
           {items.map((item) => {
-            const value = classifications[item.id];
-            if (!value) return null;
+            const value = classifications[item.id]
+            if (!value) return null
             return (
               <fieldset className="quality-classification" key={item.id}>
                 <legend>
@@ -285,7 +285,7 @@ function InspectionDialog({ open, onOpenChange }: DialogProps) {
                   </Field>
                 </div>
               </fieldset>
-            );
+            )
           })}
         </div>
         <Field label="质检备注">
@@ -304,45 +304,45 @@ function InspectionDialog({ open, onOpenChange }: DialogProps) {
         </footer>
       </form>
     </Shell>
-  );
+  )
 }
 
 function SettlementDialog({ open, onOpenChange }: DialogProps) {
-  const claimsQuery = useQualityOptions('claims');
+  const claimsQuery = useQualityOptions('claims')
   const locations = useInventoryList('locations', {
     page: 1,
     pageSize: 100,
     sortBy: 'code',
     sortOrder: 'asc',
     status: 'ACTIVE',
-  });
-  const mutations = useQualityMutations();
-  const notify = useToast();
-  const [claimId, setClaimId] = useState('');
-  const [claimItemId, setClaimItemId] = useState('');
-  const [resolutionType, setResolutionType] = useState('REPLACEMENT');
-  const [quantity, setQuantity] = useState('');
-  const [amount, setAmount] = useState('');
-  const [replacementLocationId, setReplacementLocationId] = useState('');
-  const [claimStockLocationId, setClaimStockLocationId] = useState('');
-  const [scrapLocationId, setScrapLocationId] = useState('');
-  const [disposeQuantity, setDisposeQuantity] = useState('');
-  const [batchNo, setBatchNo] = useState('');
-  const [occurredAt, setOccurredAt] = useState(today());
-  const [remark, setRemark] = useState('');
+  })
+  const mutations = useQualityMutations()
+  const notify = useToast()
+  const [claimId, setClaimId] = useState('')
+  const [claimItemId, setClaimItemId] = useState('')
+  const [resolutionType, setResolutionType] = useState('REPLACEMENT')
+  const [quantity, setQuantity] = useState('')
+  const [amount, setAmount] = useState('')
+  const [replacementLocationId, setReplacementLocationId] = useState('')
+  const [claimStockLocationId, setClaimStockLocationId] = useState('')
+  const [scrapLocationId, setScrapLocationId] = useState('')
+  const [disposeQuantity, setDisposeQuantity] = useState('')
+  const [batchNo, setBatchNo] = useState('')
+  const [occurredAt, setOccurredAt] = useState(today())
+  const [remark, setRemark] = useState('')
   const claims =
     claimsQuery.data?.data.filter((row) =>
       ['SUBMITTED', 'PARTIALLY_SETTLED'].includes(String(row.status)),
-    ) ?? [];
-  const claim = claims.find((row) => row.id === claimId);
-  const claimItems = (claim?.items as MasterRow[] | undefined) ?? [];
-  const locationRows = locations.data?.data;
+    ) ?? []
+  const claim = claims.find((row) => row.id === claimId)
+  const claimItems = (claim?.items as MasterRow[] | undefined) ?? []
+  const locationRows = locations.data?.data
 
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (!claimId) {
-      notify('请选择供应商索赔单', 'error');
-      return;
+      notify('请选择供应商索赔单', 'error')
+      return
     }
     try {
       await mutations.settlement.mutateAsync({
@@ -360,14 +360,14 @@ function SettlementDialog({ open, onOpenChange }: DialogProps) {
           occurredAt: new Date(occurredAt).toISOString(),
           remark: remark || undefined,
         },
-      });
-      notify('供应商索赔处理已过账', 'success');
-      setClaimId('');
-      onOpenChange(false);
+      })
+      notify('供应商索赔处理已过账', 'success')
+      setClaimId('')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
 
   return (
     <Shell
@@ -410,7 +410,7 @@ function SettlementDialog({ open, onOpenChange }: DialogProps) {
                   {String(
                     (
                       item.qualityIssue as {
-                        sku?: { code?: string; name?: string };
+                        sku?: { code?: string; name?: string }
                       }
                     )?.sku?.code,
                   )}{' '}
@@ -485,20 +485,20 @@ function SettlementDialog({ open, onOpenChange }: DialogProps) {
         </footer>
       </form>
     </Shell>
-  );
+  )
 }
 
 interface DialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export function QualityDialogs({
   active,
   onOpenChange,
 }: {
-  active?: QualityDialogKind;
-  onOpenChange: (kind?: QualityDialogKind) => void;
+  active?: QualityDialogKind
+  onOpenChange: (kind?: QualityDialogKind) => void
 }) {
   if (active === 'inspection')
     return (
@@ -506,13 +506,13 @@ export function QualityDialogs({
         onOpenChange={(open) => onOpenChange(open ? 'inspection' : undefined)}
         open
       />
-    );
+    )
   if (active === 'settlement')
     return (
       <SettlementDialog
         onOpenChange={(open) => onOpenChange(open ? 'settlement' : undefined)}
         open
       />
-    );
-  return null;
+    )
+  return null
 }

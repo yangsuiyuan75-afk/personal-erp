@@ -12,27 +12,27 @@ import {
   Search,
   SlidersHorizontal,
   WalletCards,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { DataTable, type DataTableColumn } from '@/components/data-table/data-table';
-import { Button } from '@/components/ui/button';
-import { DatePickerInput } from '@/components/ui/date-picker';
-import { Input, Select } from '@/components/ui/field';
-import type { ListParams, MasterRow } from '@/features/master-data/api';
-import { useListUrlState } from '@/features/master-data/use-list-url-state';
-import { useMasterOptions } from '@/features/master-data/use-master-data';
-import { apiErrorMessage } from '@/lib/api-error';
-import { formatDate } from '@/lib/date';
-import { enumLabel } from '@/lib/enum-label';
-import type { FinanceAnalytics, FinanceListView, FinanceView } from './api';
-import { ExpenseContent } from './expense-page';
-import { FinanceDialogs, type FinanceDialogKind } from './finance-dialogs';
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
+import { Button } from '@/components/ui/button'
+import { DatePickerInput } from '@/components/ui/date-picker'
+import { Input, Select } from '@/components/ui/field'
+import type { ListParams, MasterRow } from '@/features/master-data/api'
+import { useListUrlState } from '@/features/master-data/use-list-url-state'
+import { useMasterOptions } from '@/features/master-data/use-master-data'
+import { apiErrorMessage } from '@/lib/api-error'
+import { formatDate } from '@/lib/date'
+import { enumLabel } from '@/lib/enum-label'
+import type { FinanceAnalytics, FinanceListView, FinanceView } from './api'
+import { ExpenseContent } from './expense-page'
+import { FinanceDialogs, type FinanceDialogKind } from './finance-dialogs'
 import {
   useFinanceAnalytics,
   useFinanceList,
   useFinanceMutations,
   useFinanceOptions,
-} from './use-finance';
+} from './use-finance'
 
 const views: Array<{ id: FinanceView; label: string; icon: typeof Landmark }> = [
   { id: 'accounts', label: '资金账户', icon: Landmark },
@@ -44,7 +44,7 @@ const views: Array<{ id: FinanceView; label: string; icon: typeof Landmark }> = 
   { id: 'transactions', label: '资金流水', icon: WalletCards },
   { id: 'adjustments', label: '调整与费用', icon: ListFilter },
   { id: 'analytics', label: '月度分析', icon: BarChart3 },
-];
+]
 
 const sortConfig: Record<FinanceListView, { fallback: string; allowed: string[] }> = {
   accounts: { fallback: 'code', allowed: ['createdAt', 'code', 'name', 'type', 'updatedAt'] },
@@ -63,7 +63,7 @@ const sortConfig: Record<FinanceListView, { fallback: string; allowed: string[] 
     allowed: ['createdAt', 'occurredAt', 'amount', 'transactionNo'],
   },
   adjustments: { fallback: 'occurredAt', allowed: ['createdAt', 'occurredAt', 'amount'] },
-};
+}
 
 const statusText: Record<string, string> = {
   ACTIVE: '启用',
@@ -76,7 +76,7 @@ const statusText: Record<string, string> = {
   DRAFT: '草稿',
   POSTED: '已过账',
   CANCELLED: '已取消',
-};
+}
 
 const categoryText: Record<string, string> = {
   SALES_RECEIPT: '销售回款',
@@ -88,7 +88,7 @@ const categoryText: Record<string, string> = {
   OTHER_INCOME: '其他收入',
   OTHER_EXPENSE: '其他费用',
   ACCOUNT_ADJUSTMENT: '账户调整',
-};
+}
 
 const accountTypeText: Record<string, string> = {
   BANK: '银行卡',
@@ -97,22 +97,22 @@ const accountTypeText: Record<string, string> = {
   PLATFORM_BALANCE: '平台余额',
   CASH: '现金',
   OTHER: '其他',
-};
+}
 
 function money(value: unknown): string {
   return `¥${Number(value ?? 0).toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  })}`
 }
 
 function status(row: MasterRow) {
-  const value = String(row.status);
+  const value = String(row.status)
   return (
     <span className={`business-status business-${value.toLowerCase()}`}>
       {statusText[value] ?? enumLabel(value)}
     </span>
-  );
+  )
 }
 
 function columns(view: FinanceListView): DataTableColumn[] {
@@ -134,7 +134,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
       },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'updatedAt', label: '更新时间' },
-    ];
+    ]
   if (view === 'payables')
     return [
       { key: 'payableNo', label: '应付编号', sortable: false },
@@ -161,7 +161,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
       },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'occurredAt', label: '发生时间' },
-    ];
+    ]
   if (view === 'receivables')
     return [
       { key: 'receivableNo', label: '应收编号', sortable: false },
@@ -187,7 +187,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
       },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'occurredAt', label: '发生时间' },
-    ];
+    ]
   if (view === 'payments' || view === 'receipts')
     return [
       {
@@ -203,7 +203,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
       { key: 'settlementPeriod', label: '结算月份', sortable: false },
       { key: 'status', label: '状态', render: status, sortable: false },
       { key: 'occurredAt', label: '发生时间' },
-    ];
+    ]
   if (view === 'transactions')
     return [
       { key: 'transactionNo', label: '流水号' },
@@ -228,7 +228,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
       { key: 'customer.name', label: '客户', sortable: false },
       { key: 'supplier.name', label: '供应商', sortable: false },
       { key: 'occurredAt', label: '入账时间' },
-    ];
+    ]
   return [
     { key: 'adjustmentNo', label: '调整单号', sortable: false },
     { key: 'account.name', label: '资金账户', sortable: false },
@@ -248,7 +248,7 @@ function columns(view: FinanceListView): DataTableColumn[] {
     { key: 'reason', label: '原因', sortable: false },
     { key: 'status', label: '状态', render: status, sortable: false },
     { key: 'occurredAt', label: '发生时间' },
-  ];
+  ]
 }
 
 function FinanceFilters({
@@ -258,18 +258,18 @@ function FinanceFilters({
   setParam,
   searchable = true,
 }: {
-  params: ListParams;
-  keyword: string;
-  setKeyword: (value: string) => void;
-  setParam: (key: string, value?: string, resetPage?: boolean) => void;
-  searchable?: boolean;
+  params: ListParams
+  keyword: string
+  setKeyword: (value: string) => void
+  setParam: (key: string, value?: string, resetPage?: boolean) => void
+  searchable?: boolean
 }) {
-  const accounts = useFinanceOptions('accounts');
-  const salesChannels = useMasterOptions('sales-channels');
-  const customers = useMasterOptions('customers');
-  const suppliers = useMasterOptions('suppliers');
-  const purchaseChannels = useMasterOptions('purchase-channels');
-  const buyers = useMasterOptions('buyers');
+  const accounts = useFinanceOptions('accounts')
+  const salesChannels = useMasterOptions('sales-channels')
+  const customers = useMasterOptions('customers')
+  const suppliers = useMasterOptions('suppliers')
+  const purchaseChannels = useMasterOptions('purchase-channels')
+  const buyers = useMasterOptions('buyers')
   return (
     <div className="filter-bar inventory-filter-bar finance-filter-bar">
       {searchable ? (
@@ -323,7 +323,7 @@ function FinanceFilters({
         </div>
       </details>
     </div>
-  );
+  )
 }
 
 function Options({ rows }: { rows?: MasterRow[] }) {
@@ -331,7 +331,7 @@ function Options({ rows }: { rows?: MasterRow[] }) {
     <option key={row.id} value={row.id}>
       {row.code} · {row.name}
     </option>
-  ));
+  ))
 }
 
 function FinanceContext({ row, view }: { row?: MasterRow; view: FinanceListView }) {
@@ -342,15 +342,15 @@ function FinanceContext({ row, view }: { row?: MasterRow; view: FinanceListView 
         <strong>选择一条财务记录</strong>
         <p>右侧会展示资金方向、结算进度和关联维度，列表仍是主要工作面。</p>
       </aside>
-    );
-  const amount = row.balance ?? row.outstandingAmount ?? row.amount ?? row.originalAmount;
+    )
+  const amount = row.balance ?? row.outstandingAmount ?? row.amount ?? row.originalAmount
   const details = [
     ['业务编号', row.code],
     ['状态', statusText[String(row.status)] ?? enumLabel(row.status)],
     ['金额', amount],
     ['账户', (row.account as { name?: string } | undefined)?.name],
     ['发生时间', row.occurredAt ?? row.createdAt],
-  ].filter(([, value]) => value != null && value !== '');
+  ].filter(([, value]) => value != null && value !== '')
   return (
     <aside className="inventory-context finance-context">
       <header>
@@ -382,7 +382,7 @@ function FinanceContext({ row, view }: { row?: MasterRow; view: FinanceListView 
         </p>
       </section>
     </aside>
-  );
+  )
 }
 
 function ListContent({
@@ -392,11 +392,11 @@ function ListContent({
   setKeyword,
   setParam,
 }: {
-  view: FinanceListView;
-  params: ListParams;
-  keyword: string;
-  setKeyword: (value: string) => void;
-  setParam: (key: string, value?: string, resetPage?: boolean) => void;
+  view: FinanceListView
+  params: ListParams
+  keyword: string
+  setKeyword: (value: string) => void
+  setParam: (key: string, value?: string, resetPage?: boolean) => void
 }) {
   const normalizedParams = useMemo(
     () => ({
@@ -406,22 +406,22 @@ function ListContent({
         : sortConfig[view].fallback,
     }),
     [params, view],
-  );
-  const query = useFinanceList(view, normalizedParams);
-  const mutations = useFinanceMutations();
-  const [selected, setSelected] = useState<MasterRow>();
-  const rows = query.data?.data ?? [];
+  )
+  const query = useFinanceList(view, normalizedParams)
+  const mutations = useFinanceMutations()
+  const [selected, setSelected] = useState<MasterRow>()
+  const rows = query.data?.data ?? []
   const incoming = rows.reduce(
     (sum, row) =>
       sum + (row.direction === 'IN' || view === 'receipts' ? Number(row.amount ?? 0) : 0),
     0,
-  );
+  )
   const outgoing = rows.reduce(
     (sum, row) =>
       sum + (row.direction === 'OUT' || view === 'payments' ? Number(row.amount ?? 0) : 0),
     0,
-  );
-  const outstanding = rows.reduce((sum, row) => sum + Number(row.outstandingAmount ?? 0), 0);
+  )
+  const outstanding = rows.reduce((sum, row) => sum + Number(row.outstandingAmount ?? 0), 0)
   return (
     <>
       <div className="inventory-kpis business-kpis finance-kpis">
@@ -475,13 +475,13 @@ function ListContent({
             onPageSizeChange={(size) => setParam('pageSize', String(size))}
             onRowClick={setSelected}
             onSort={(key) => {
-              setParam('sortBy', key);
+              setParam('sortBy', key)
               setParam(
                 'sortOrder',
                 normalizedParams.sortBy === key && normalizedParams.sortOrder === 'asc'
                   ? 'desc'
                   : 'asc',
-              );
+              )
             }}
             rows={rows}
             sortBy={normalizedParams.sortBy}
@@ -491,7 +491,7 @@ function ListContent({
         <FinanceContext row={selected} view={view} />
       </div>
     </>
-  );
+  )
 }
 
 function AnalyticsContent({
@@ -500,18 +500,18 @@ function AnalyticsContent({
   setKeyword,
   setParam,
 }: {
-  params: ListParams;
-  keyword: string;
-  setKeyword: (value: string) => void;
-  setParam: (key: string, value?: string, resetPage?: boolean) => void;
+  params: ListParams
+  keyword: string
+  setKeyword: (value: string) => void
+  setParam: (key: string, value?: string, resetPage?: boolean) => void
 }) {
-  const query = useFinanceAnalytics(params);
+  const query = useFinanceAnalytics(params)
   if (query.isLoading)
-    return <div className="quality-analytics-state">正在汇总月度资金与经营数据…</div>;
+    return <div className="quality-analytics-state">正在汇总月度资金与经营数据…</div>
   if (query.error)
-    return <div className="quality-analytics-state error">{apiErrorMessage(query.error)}</div>;
-  if (!query.data) return null;
-  const data = query.data;
+    return <div className="quality-analytics-state error">{apiErrorMessage(query.error)}</div>
+  if (!query.data) return null
+  const data = query.data
   return (
     <div className="finance-analytics">
       <div className="list-card finance-analytics-filter">
@@ -582,7 +582,7 @@ function AnalyticsContent({
         </section>
       </div>
     </div>
-  );
+  )
 }
 
 function FinanceSummary({ data }: { data: FinanceAnalytics }) {
@@ -595,7 +595,7 @@ function FinanceSummary({ data }: { data: FinanceAnalytics }) {
     ['质量损失', data.summary.qualityLoss, '按问题批次成本'],
     ['未收应收', data.summary.outstandingReceivable, '期末应收余额'],
     ['未付应付', data.summary.outstandingPayable, '期末应付余额'],
-  ];
+  ]
   return (
     <div className="finance-summary-grid">
       {cards.map(([label, value, note]) => (
@@ -606,17 +606,17 @@ function FinanceSummary({ data }: { data: FinanceAnalytics }) {
         </article>
       ))}
     </div>
-  );
+  )
 }
 
 export function FinancePage() {
-  const { params, keyword, setKeyword, setParam } = useListUrlState();
-  const rawView = new URLSearchParams(window.location.search).get('view');
+  const { params, keyword, setKeyword, setParam } = useListUrlState()
+  const rawView = new URLSearchParams(window.location.search).get('view')
   const view: FinanceView = views.some((item) => item.id === rawView)
     ? (rawView as FinanceView)
-    : 'accounts';
-  const [dialog, setDialog] = useState<FinanceDialogKind>();
-  const expenseView = view === 'expenses';
+    : 'accounts'
+  const [dialog, setDialog] = useState<FinanceDialogKind>()
+  const expenseView = view === 'expenses'
   return (
     <section className="page-section inventory-page finance-page">
       <header className="page-heading inventory-heading">
@@ -688,5 +688,5 @@ export function FinancePage() {
       )}
       <FinanceDialogs active={dialog} onOpenChange={setDialog} />
     </section>
-  );
+  )
 }

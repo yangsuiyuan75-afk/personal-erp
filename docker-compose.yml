@@ -30,7 +30,7 @@ services:
       POSTGRES_USER: personal_erp_test
       POSTGRES_PASSWORD: personal_erp_test
     ports:
-      - '5433:5432'
+      - '${POSTGRES_TEST_PORT:-5433}:5432'
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:

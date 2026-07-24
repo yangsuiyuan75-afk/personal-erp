@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import type { MasterRow } from '@/features/master-data/api';
-import { sumSalesQuantity } from './sales-page';
+import { describe, expect, it } from 'vitest'
+import type { MasterRow } from '@/features/master-data/api'
+import { sumSalesQuantity } from './sales-page'
 
 describe('sumSalesQuantity', () => {
   it('sums item quantities and ignores invalid values', () => {
@@ -12,6 +12,6 @@ describe('sumSalesQuantity', () => {
         status: 'DRAFT',
         items: [{ quantity: '2.5' }, { quantity: 3 }, { quantity: 'invalid' }],
       } as MasterRow),
-    ).toBe(5.5);
-  });
-});
+    ).toBe(5.5)
+  })
+})

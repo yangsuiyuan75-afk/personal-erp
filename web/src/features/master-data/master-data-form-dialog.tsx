@@ -1,45 +1,40 @@
-import { Dialog } from '@base-ui/react/dialog';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ImagePlus, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import {
-  useForm,
-  type FieldValues,
-  type UseFormSetValue,
-  type UseFormWatch,
-} from 'react-hook-form';
-import type { ZodType } from 'zod';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/feedback/toast-provider';
-import { Field, Input, Select, Textarea } from '@/components/ui/field';
-import { ImagePreview } from '@/components/ui/image-preview';
-import { apiErrorMessage } from '@/lib/api-error';
-import type { MasterRow, ProductImage } from './api';
-import type { FormField, MasterConfig } from './config';
+import { Dialog } from '@base-ui/react/dialog'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { ImagePlus, Plus, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useForm, type FieldValues, type UseFormSetValue, type UseFormWatch } from 'react-hook-form'
+import type { ZodType } from 'zod'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/feedback/toast-provider'
+import { Field, Input, Select, Textarea } from '@/components/ui/field'
+import { ImagePreview } from '@/components/ui/image-preview'
+import { apiErrorMessage } from '@/lib/api-error'
+import type { MasterRow, ProductImage } from './api'
+import type { FormField, MasterConfig } from './config'
 import {
   useMasterOptions,
   useProductImageMutations,
   useProductImages,
   useProductImageUrl,
-} from './use-master-data';
+} from './use-master-data'
 
 function rowDefaults(config: MasterConfig, row?: MasterRow): Record<string, unknown> {
   return Object.fromEntries(
     config.fields.map((field) => {
       if (!row) {
-        if (field.type === 'multiselect') return [field.name, []];
-        if (field.type === 'json' || field.type === 'attributes') return [field.name, '{}'];
-        if (field.name === 'decimalScale') return [field.name, 0];
-        return [field.name, ''];
+        if (field.type === 'multiselect') return [field.name, []]
+        if (field.type === 'json' || field.type === 'attributes') return [field.name, '{}']
+        if (field.name === 'decimalScale') return [field.name, 0]
+        return [field.name, '']
       }
       if (field.type === 'json' || field.type === 'attributes')
-        return [field.name, JSON.stringify(row[field.name] ?? {}, null, 2)];
-      return [field.name, row[field.name] ?? ''];
+        return [field.name, JSON.stringify(row[field.name] ?? {}, null, 2)]
+      return [field.name, row[field.name] ?? '']
     }),
-  );
+  )
 }
 
-type AttributePair = { key: string; value: string };
+type AttributePair = { key: string; value: string }
 
 const inventoryModeGuides = [
   {
@@ -63,14 +58,14 @@ const inventoryModeGuides = [
     when: '适合多渠道共用本地库存，但需要限制某渠道可售数量。',
     rule: '销售仍扣减实际仓库存，同时消耗该渠道的已分配额度。',
   },
-] as const;
+] as const
 
 function InventoryModeGuide({
   value,
   onSelect,
 }: {
-  value: string;
-  onSelect: (value: string) => void;
+  value: string
+  onSelect: (value: string) => void
 }) {
   return (
     <section aria-label="库存模式选择说明" className="inventory-mode-guide">
@@ -102,46 +97,46 @@ function InventoryModeGuide({
         ))}
       </div>
     </section>
-  );
+  )
 }
 
 function attributePairs(value: unknown): AttributePair[] {
   try {
-    const attributes = JSON.parse(String(value ?? '{}'));
+    const attributes = JSON.parse(String(value ?? '{}'))
     if (attributes && typeof attributes === 'object' && !Array.isArray(attributes))
       return Object.entries(attributes).map(([key, attributeValue]) => ({
         key,
         value: String(attributeValue),
-      }));
+      }))
   } catch {
     // The schema reports invalid legacy data; keep the editor usable.
   }
-  return [];
+  return []
 }
 
 function AttributeEditor({
   value,
   onChange,
 }: {
-  value: unknown;
-  onChange: (value: string) => void;
+  value: unknown
+  onChange: (value: string) => void
 }) {
-  const [pairs, setPairs] = useState<AttributePair[]>(() => attributePairs(value));
+  const [pairs, setPairs] = useState<AttributePair[]>(() => attributePairs(value))
 
-  useEffect(() => setPairs(attributePairs(value)), [value]);
+  useEffect(() => setPairs(attributePairs(value)), [value])
 
   const update = (next: AttributePair[]) => {
-    setPairs(next);
+    setPairs(next)
     onChange(
       JSON.stringify(
         Object.fromEntries(
           next.filter((pair) => pair.key.trim()).map((pair) => [pair.key.trim(), pair.value]),
         ),
       ),
-    );
-  };
+    )
+  }
 
-  const rows = pairs.length ? pairs : [{ key: '', value: '' }];
+  const rows = pairs.length ? pairs : [{ key: '', value: '' }]
 
   return (
     <div className="attribute-editor">
@@ -190,7 +185,7 @@ function AttributeEditor({
         添加属性
       </button>
     </div>
-  );
+  )
 }
 
 function ProductImageCard({
@@ -199,12 +194,12 @@ function ProductImageCard({
   pending,
   productId,
 }: {
-  image: ProductImage;
-  onRemove: () => void;
-  pending: boolean;
-  productId: string;
+  image: ProductImage
+  onRemove: () => void
+  pending: boolean
+  productId: string
 }) {
-  const content = useProductImageUrl(productId, image.fileAssetId);
+  const content = useProductImageUrl(productId, image.fileAssetId)
   return (
     <article className={`product-image-card ${image.isPrimary ? 'primary' : ''}`}>
       <div className="product-image-preview">
@@ -226,16 +221,16 @@ function ProductImageCard({
         </button>
       </footer>
     </article>
-  );
+  )
 }
 
 function PendingProductImageCard({ file, onRemove }: { file: File; onRemove: () => void }) {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState('')
   useEffect(() => {
-    const next = URL.createObjectURL(file);
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-  }, [file]);
+    const next = URL.createObjectURL(file)
+    setUrl(next)
+    return () => URL.revokeObjectURL(next)
+  }, [file])
 
   return (
     <article className="product-image-card pending">
@@ -252,7 +247,7 @@ function PendingProductImageCard({ file, onRemove }: { file: File; onRemove: () 
         </button>
       </footer>
     </article>
-  );
+  )
 }
 
 function DynamicField({
@@ -262,18 +257,18 @@ function DynamicField({
   watch,
   error,
 }: {
-  field: FormField;
-  register: ReturnType<typeof useForm<FieldValues>>['register'];
-  setValue: UseFormSetValue<FieldValues>;
-  watch: UseFormWatch<FieldValues>;
-  error?: string;
+  field: FormField
+  register: ReturnType<typeof useForm<FieldValues>>['register']
+  setValue: UseFormSetValue<FieldValues>
+  watch: UseFormWatch<FieldValues>
+  error?: string
 }) {
-  const options = useMasterOptions(field.optionResource);
+  const options = useMasterOptions(field.optionResource)
   const choices =
     field.options ??
     options.data?.data.map((row) => ({ value: row.id, label: `${row.code} · ${row.name}` })) ??
-    [];
-  const registration = register(field.name);
+    []
+  const registration = register(field.name)
 
   return (
     <Field error={error} label={field.label}>
@@ -321,7 +316,7 @@ function DynamicField({
         </div>
       )}
     </Field>
-  );
+  )
 }
 
 export function MasterDataFormDialog({
@@ -332,20 +327,20 @@ export function MasterDataFormDialog({
   onOpenChange,
   onSave,
 }: {
-  config: MasterConfig;
-  row?: MasterRow;
-  open: boolean;
-  pending: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSave: (payload: Record<string, unknown>) => Promise<MasterRow>;
+  config: MasterConfig
+  row?: MasterRow
+  open: boolean
+  pending: boolean
+  onOpenChange: (open: boolean) => void
+  onSave: (payload: Record<string, unknown>) => Promise<MasterRow>
 }) {
-  const notify = useToast();
-  const isProduct = config.resource === 'products';
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [savedProduct, setSavedProduct] = useState<MasterRow>();
-  const productId = isProduct ? (row?.id ?? savedProduct?.id) : undefined;
-  const images = useProductImages(productId);
-  const imageMutations = useProductImageMutations();
+  const notify = useToast()
+  const isProduct = config.resource === 'products'
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [savedProduct, setSavedProduct] = useState<MasterRow>()
+  const productId = isProduct ? (row?.id ?? savedProduct?.id) : undefined
+  const images = useProductImages(productId)
+  const imageMutations = useProductImageMutations()
   const {
     register,
     setValue,
@@ -356,37 +351,37 @@ export function MasterDataFormDialog({
   } = useForm<FieldValues>({
     resolver: zodResolver(config.schema as ZodType<FieldValues, FieldValues>),
     defaultValues: rowDefaults(config, row),
-  });
+  })
 
   useEffect(() => {
-    reset(rowDefaults(config, row));
-    setImageFiles([]);
-    setSavedProduct(undefined);
-  }, [config, open, reset, row]);
+    reset(rowDefaults(config, row))
+    setImageFiles([])
+    setSavedProduct(undefined)
+  }, [config, open, reset, row])
 
   const submit = async (values: FieldValues) => {
-    const payload: Record<string, unknown> = { ...values };
-    if (typeof payload.attributes === 'string') payload.attributes = JSON.parse(payload.attributes);
+    const payload: Record<string, unknown> = { ...values }
+    if (typeof payload.attributes === 'string') payload.attributes = JSON.parse(payload.attributes)
     for (const field of config.fields) {
       if ((field.type === 'select' || field.optionResource) && payload[field.name] === '')
-        payload[field.name] = null;
+        payload[field.name] = null
     }
-    if (payload.weight === '') payload.weight = null;
+    if (payload.weight === '') payload.weight = null
     try {
-      const saved = savedProduct ?? (await onSave(payload));
+      const saved = savedProduct ?? (await onSave(payload))
       if (isProduct && imageFiles.length) {
-        setSavedProduct(saved);
-        await imageMutations.upload.mutateAsync({ productId: saved.id, files: imageFiles });
-        setImageFiles([]);
+        setSavedProduct(saved)
+        await imageMutations.upload.mutateAsync({ productId: saved.id, files: imageFiles })
+        setImageFiles([])
       }
-      notify(row ? '资料已更新' : '资料已创建', 'success');
-      onOpenChange(false);
+      notify(row ? '资料已更新' : '资料已创建', 'success')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
 
-  const imagePending = imageMutations.upload.isPending || imageMutations.remove.isPending;
+  const imagePending = imageMutations.upload.isPending || imageMutations.remove.isPending
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -499,5 +494,5 @@ export function MasterDataFormDialog({
         </Dialog.Viewport>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }

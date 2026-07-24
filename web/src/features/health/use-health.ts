@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { getHealth } from './api';
+import { useQuery } from '@tanstack/react-query'
+import { getHealth } from './api'
 
-export const healthQueryKey = ['health'] as const;
+export const healthQueryKey = ['health'] as const
 
 export function useHealth() {
   return useQuery({
@@ -9,5 +9,5 @@ export function useHealth() {
     queryFn: getHealth,
     retry: 1,
     refetchInterval: 30_000,
-  });
+  })
 }

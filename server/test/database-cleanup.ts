@@ -1,7 +1,7 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client'
 
 export async function cleanDatabase(prisma: PrismaClient): Promise<void> {
-  await prisma.salesChannel.updateMany({ data: { defaultLocationId: null } });
+  await prisma.salesChannel.updateMany({ data: { defaultLocationId: null } })
   await prisma.$transaction([
     prisma.auditLog.deleteMany(),
     prisma.refreshSession.deleteMany(),
@@ -71,5 +71,5 @@ export async function cleanDatabase(prisma: PrismaClient): Promise<void> {
     prisma.inventoryLocation.deleteMany(),
     prisma.salesChannel.deleteMany(),
     prisma.adminUser.deleteMany(),
-  ]);
+  ])
 }

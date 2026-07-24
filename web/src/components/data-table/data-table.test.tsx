@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { DataTable } from './data-table';
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+import { DataTable } from './data-table'
 
 describe('DataTable default detail', () => {
   it('groups nested audit data and uses readable labels', () => {
@@ -33,19 +33,19 @@ describe('DataTable default detail', () => {
         sortBy="createdAt"
         sortOrder="desc"
       />,
-    );
+    )
 
-    fireEvent.click(screen.getByRole('button', { name: '查看 BackupHistory' }));
+    fireEvent.click(screen.getByRole('button', { name: '查看 BackupHistory' }))
 
-    expect(screen.getAllByText('模块')).toHaveLength(3);
-    expect(screen.getAllByText('备份恢复')).toHaveLength(2);
-    expect(screen.getAllByText('创建启动补偿')).toHaveLength(2);
-    expect(screen.getAllByText('物理仓库')).toHaveLength(2);
-    expect(screen.getByRole('heading', { name: '变更后' })).toBeInTheDocument();
-    expect(screen.getByText('备份编号')).toBeInTheDocument();
-    expect(screen.queryByText('after', { exact: true })).not.toBeInTheDocument();
-    expect(screen.queryByText('d11630be-7e9a-4983-b2a1-32e92e745393')).not.toBeInTheDocument();
-  });
+    expect(screen.getAllByText('模块')).toHaveLength(3)
+    expect(screen.getAllByText('备份恢复')).toHaveLength(2)
+    expect(screen.getAllByText('创建启动补偿')).toHaveLength(2)
+    expect(screen.getAllByText('物理仓库')).toHaveLength(2)
+    expect(screen.getByRole('heading', { name: '变更后' })).toBeInTheDocument()
+    expect(screen.getByText('备份编号')).toBeInTheDocument()
+    expect(screen.queryByText('after', { exact: true })).not.toBeInTheDocument()
+    expect(screen.queryByText('d11630be-7e9a-4983-b2a1-32e92e745393')).not.toBeInTheDocument()
+  })
 
   it('keeps business fields and removes internal identifiers from document details', () => {
     render(
@@ -105,19 +105,19 @@ describe('DataTable default detail', () => {
         sortBy="occurredAt"
         sortOrder="desc"
       />,
-    );
+    )
 
-    fireEvent.click(screen.getByRole('button', { name: '查看 中泰博科技' }));
+    fireEvent.click(screen.getByRole('button', { name: '查看 中泰博科技' }))
 
-    const dialog = within(screen.getByRole('dialog'));
-    expect(dialog.getByText('PR-001 · 中泰博科技')).toBeInTheDocument();
-    expect(dialog.getByText('收货编号')).toBeInTheDocument();
-    expect(dialog.getByRole('heading', { name: '采购订单' })).toBeInTheDocument();
-    expect(dialog.getByText('AA01 · 中泰博科技')).toBeInTheDocument();
-    expect(dialog.getByText('LongSheng · 档口仓库')).toBeInTheDocument();
-    expect(dialog.getAllByText('¥360.00')).toHaveLength(2);
-    expect(dialog.getByText('2026年7月21日')).toBeInTheDocument();
-    expect(dialog.queryByText('purchaseOrderId')).not.toBeInTheDocument();
-    expect(dialog.queryByText('e9e7259e-c2c7-4427-8dfa-dca064a144b6')).not.toBeInTheDocument();
-  });
-});
+    const dialog = within(screen.getByRole('dialog'))
+    expect(dialog.getByText('PR-001 · 中泰博科技')).toBeInTheDocument()
+    expect(dialog.getByText('收货编号')).toBeInTheDocument()
+    expect(dialog.getByRole('heading', { name: '采购订单' })).toBeInTheDocument()
+    expect(dialog.getByText('AA01 · 中泰博科技')).toBeInTheDocument()
+    expect(dialog.getByText('LongSheng · 档口仓库')).toBeInTheDocument()
+    expect(dialog.getAllByText('¥360.00')).toHaveLength(2)
+    expect(dialog.getByText('2026年7月21日')).toBeInTheDocument()
+    expect(dialog.queryByText('purchaseOrderId')).not.toBeInTheDocument()
+    expect(dialog.queryByText('e9e7259e-c2c7-4427-8dfa-dca064a144b6')).not.toBeInTheDocument()
+  })
+})

@@ -1,15 +1,15 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '@playwright/test'
 
-let initialOrderSort: URLSearchParams | undefined;
+let initialOrderSort: URLSearchParams | undefined
 
 test.beforeEach(async ({ page }) => {
-  initialOrderSort = undefined;
+  initialOrderSort = undefined
   await page.route('**/api/v1/auth/status', (route) =>
     route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({ data: { initialized: true } }),
     }),
-  );
+  )
   await page.route('**/api/v1/auth/refresh', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -17,8 +17,8 @@ test.beforeEach(async ({ page }) => {
         data: { user: { id: 'admin', username: 'admin' }, accessToken: 'token' },
       }),
     }),
-  );
-  const sku = { code: 'SKU-BOX', name: '收纳盒' };
+  )
+  const sku = { code: 'SKU-BOX', name: '收纳盒' }
   const purchaseRows = {
     prices: {
       id: 'purchase-price-id',
@@ -89,15 +89,15 @@ test.beforeEach(async ({ page }) => {
       status: 'OPEN',
       createdAt: '2026-07-16T00:00:00Z',
     },
-  };
+  }
   await page.route('**/api/v1/purchase/**', (route) => {
-    const requestUrl = new URL(route.request().url());
-    const endpoint = requestUrl.pathname.split('/').at(-1) ?? '';
+    const requestUrl = new URL(route.request().url())
+    const endpoint = requestUrl.pathname.split('/').at(-1) ?? ''
     if (endpoint === 'orders' && !initialOrderSort) {
-      initialOrderSort = requestUrl.searchParams;
+      initialOrderSort = requestUrl.searchParams
     }
-    const row = purchaseRows[endpoint as keyof typeof purchaseRows];
-    if (!row) return route.fallback();
+    const row = purchaseRows[endpoint as keyof typeof purchaseRows]
+    if (!row) return route.fallback()
     return route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -111,26 +111,26 @@ test.beforeEach(async ({ page }) => {
           hasNextPage: false,
         },
       }),
-    });
-  });
-});
+    })
+  })
+})
 
 test('renders purchase lifecycle and keeps query state in URL', async ({ page }) => {
-  await page.goto('/purchase');
-  await expect.poll(() => initialOrderSort?.get('sortBy')).toBe('orderDate');
-  expect(initialOrderSort?.get('sortOrder')).toBe('desc');
-  await expect(page.getByRole('heading', { name: '采购与收货' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'PO-20260716-001', exact: true })).toBeVisible();
-  await expect(page.getByRole('table').getByText('部分收货')).toBeVisible();
-  await expect(page.getByRole('table')).toContainText('SKU-BOX · 收纳盒');
-  await page.getByRole('textbox', { name: '采购关键字搜索' }).fill('星河');
-  await expect(page).toHaveURL(/keyword=%E6%98%9F%E6%B2%B3/);
-  const tabs = page.getByRole('navigation', { name: '采购视图' });
+  await page.goto('/purchase')
+  await expect.poll(() => initialOrderSort?.get('sortBy')).toBe('orderDate')
+  expect(initialOrderSort?.get('sortOrder')).toBe('desc')
+  await expect(page.getByRole('heading', { name: '采购与收货' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'PO-20260716-001', exact: true })).toBeVisible()
+  await expect(page.getByRole('table').getByText('部分收货')).toBeVisible()
+  await expect(page.getByRole('table')).toContainText('SKU-BOX · 收纳盒')
+  await page.getByRole('textbox', { name: '采购关键字搜索' }).fill('星河')
+  await expect(page).toHaveURL(/keyword=%E6%98%9F%E6%B2%B3/)
+  const tabs = page.getByRole('navigation', { name: '采购视图' })
   for (const tab of ['采购收货', '采购退货', '采购报价', '应付', '供应商退款']) {
-    await tabs.getByRole('button', { name: tab }).click();
-    await expect(page.getByRole('table')).toContainText('SKU-BOX · 收纳盒');
+    await tabs.getByRole('button', { name: tab }).click()
+    await expect(page.getByRole('table')).toContainText('SKU-BOX · 收纳盒')
   }
-  await tabs.getByRole('button', { name: '采购订单' }).click();
-  await page.getByRole('button', { name: '新建采购订单' }).click();
-  await expect(page.getByRole('heading', { name: '新建采购订单' })).toBeVisible();
-});
+  await tabs.getByRole('button', { name: '采购订单' }).click()
+  await page.getByRole('button', { name: '新建采购订单' }).click()
+  await expect(page.getByRole('heading', { name: '新建采购订单' })).toBeVisible()
+})

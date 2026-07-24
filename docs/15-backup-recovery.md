@@ -10,7 +10,7 @@ pg_restore --clean --if-exists --single-transaction
 ```
 
 默认本地 Docker 环境通过 `docker exec personal-erp-postgres` 调用容器内工具；也可用
-`PG_DUMP_PATH`、`PG_RESTORE_PATH` 指向主机工具。测试库按端口 5433 自动使用
+`PG_DUMP_PATH`、`PG_RESTORE_PATH` 指向主机工具。测试库按 `POSTGRES_TEST_PORT`（默认 5433）自动使用
 `personal-erp-postgres-test`，两个容器名均可由环境变量覆盖。
 
 调用链保持：

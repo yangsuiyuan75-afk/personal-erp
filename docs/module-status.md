@@ -2,7 +2,7 @@
 
 | Phase | Module                          | Status                             | Notes                                                                                          |
 | ----: | ------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------- |
-|     0 | Workspace / Docker / PostgreSQL | COMPLETE                           | PostgreSQL 17 Alpine；本机 5434、测试库 5433；Migration `202607160001_phase0_foundation`       |
+|     0 | Workspace / Docker / PostgreSQL | COMPLETE                           | PostgreSQL 17 Alpine；本机 5551、测试库 5552；Migration `202607160001_phase0_foundation`       |
 |     0 | NestJS foundation               | COMPLETE                           | Health、Swagger、Pino、统一响应/错误、请求 ID；unit/integration/E2E 通过                       |
 |     0 | React / shadcn Base UI          | COMPLETE                           | Vite React TS、Tailwind、Base UI、Iris tokens；unit/E2E/build 通过                             |
 |     1 | Auth                            | COMPLETE                           | 单管理员初始化/登录/刷新轮换/退出；Argon2id、JWT、HttpOnly Cookie、审计                        |
@@ -29,7 +29,7 @@
 - `pnpm build`: passed (NestJS + Vite)
 - `pnpm prisma:validate`: passed
 
-Remaining Phase 0 risk: local port 5432 was already occupied, so this workspace's generated `.env` uses port 5434. `.env.example` keeps the documented configurable default 5432.
+Windows reserved TCP range 5351–5450 covers the prior local ports 5434/5433, so this workspace's generated `.env` uses 5551/5552. `.env.example` keeps the documented configurable defaults 5432/5433.
 
 ## Phase 1 quality gate
 

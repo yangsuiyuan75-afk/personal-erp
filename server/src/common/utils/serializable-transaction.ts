@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client';
-import type { PrismaService } from '../../database/prisma.service';
+import { Prisma } from '@prisma/client'
+import type { PrismaService } from '../../database/prisma.service'
 
 export async function serializableTransaction<T>(
   prisma: PrismaService,
@@ -10,12 +10,12 @@ export async function serializableTransaction<T>(
     try {
       return await prisma.$transaction(work, {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      });
+      })
     } catch (error) {
       const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034';
-      if (!retryable || attempt === attempts) throw error;
+        error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034'
+      if (!retryable || attempt === attempts) throw error
     }
   }
-  throw new Error('Serializable transaction retry exhausted');
+  throw new Error('Serializable transaction retry exhausted')
 }

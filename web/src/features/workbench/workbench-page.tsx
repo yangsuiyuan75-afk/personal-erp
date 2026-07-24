@@ -1,6 +1,6 @@
-import { ArrowRight, CheckCircle2, Database, PackageSearch, ShieldCheck } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useHealth } from '@/features/health/use-health';
+import { ArrowRight, CheckCircle2, Database, PackageSearch, ShieldCheck } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useHealth } from '@/features/health/use-health'
 
 const steps = [
   {
@@ -15,10 +15,10 @@ const steps = [
     to: '/master/suppliers',
     icon: ShieldCheck,
   },
-];
+]
 
 export function WorkbenchPage() {
-  const health = useHealth();
+  const health = useHealth()
   return (
     <section className="page-section workbench-page">
       <header className="page-heading">
@@ -58,5 +58,5 @@ export function WorkbenchPage() {
         ))}
       </div>
     </section>
-  );
+  )
 }

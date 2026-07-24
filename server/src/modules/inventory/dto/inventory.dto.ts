@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -13,7 +13,7 @@ import {
   IsUUID,
   MaxLength,
   ValidateNested,
-} from 'class-validator';
+} from 'class-validator'
 import {
   AdjustmentDirection,
   DocumentStatus,
@@ -21,60 +21,60 @@ import {
   InventoryStockStatus,
   InventoryTransactionType,
   MasterDataStatus,
-} from '@prisma/client';
-import { ListQueryDto } from '../../../common/dto/list-query.dto';
+} from '@prisma/client'
+import { ListQueryDto } from '../../../common/dto/list-query.dto'
 
 export class InventoryQueryDto extends ListQueryDto {
   @IsOptional()
   @IsUUID()
-  locationId?: string;
+  locationId?: string
 
   @IsOptional()
   @IsUUID()
-  skuId?: string;
+  skuId?: string
 
   @IsOptional()
   @IsEnum(InventoryStockStatus)
-  stockStatus?: InventoryStockStatus;
+  stockStatus?: InventoryStockStatus
 
   @IsOptional()
   @IsUUID()
-  supplierId?: string;
+  supplierId?: string
 
   @IsOptional()
   @IsEnum(InventoryTransactionType)
-  transactionType?: InventoryTransactionType;
+  transactionType?: InventoryTransactionType
 
   @IsOptional()
   @IsEnum(DocumentStatus)
-  documentStatus?: DocumentStatus;
+  documentStatus?: DocumentStatus
 }
 
 export class CreateLocationDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(64)
-  code!: string;
+  code!: string
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  name!: string;
+  name!: string
 
   @IsEnum(InventoryLocationType)
-  type!: InventoryLocationType;
+  type!: InventoryLocationType
 
   @IsOptional()
   @IsUUID()
-  parentId?: string;
+  parentId?: string
 
   @IsOptional()
   @IsUUID()
-  salesChannelId?: string;
+  salesChannelId?: string
 
   @IsOptional()
   @IsBoolean()
-  isLeaf?: boolean;
+  isLeaf?: boolean
 }
 
 export class UpdateLocationDto {
@@ -82,56 +82,56 @@ export class UpdateLocationDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  name?: string;
+  name?: string
 
   @IsOptional()
   @IsEnum(InventoryLocationType)
-  type?: InventoryLocationType;
+  type?: InventoryLocationType
 
   @IsOptional()
   @IsUUID()
-  parentId?: string;
+  parentId?: string
 
   @IsOptional()
   @IsUUID()
-  salesChannelId?: string;
+  salesChannelId?: string
 
   @IsOptional()
   @IsBoolean()
-  isLeaf?: boolean;
+  isLeaf?: boolean
 
   @IsOptional()
   @IsEnum(MasterDataStatus)
-  status?: MasterDataStatus;
+  status?: MasterDataStatus
 }
 
 export class OpeningRowDto {
   @IsString()
   @IsNotEmpty()
-  locationCode!: string;
+  locationCode!: string
 
   @IsString()
   @IsNotEmpty()
-  skuCode!: string;
+  skuCode!: string
 
   @IsOptional()
   @IsEnum(InventoryStockStatus)
-  stockStatus: InventoryStockStatus = InventoryStockStatus.AVAILABLE;
+  stockStatus: InventoryStockStatus = InventoryStockStatus.AVAILABLE
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsNumberString()
-  unitCost!: string;
+  unitCost!: string
 
   @IsString()
   @IsNotEmpty()
-  batchNo!: string;
+  batchNo!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class OpeningRowsDto {
@@ -140,127 +140,127 @@ export class OpeningRowsDto {
   @ArrayMaxSize(5000)
   @ValidateNested({ each: true })
   @Type(() => OpeningRowDto)
-  rows!: OpeningRowDto[];
+  rows!: OpeningRowDto[]
 }
 
 export class CreateOpeningDto extends OpeningRowsDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
-  importKey!: string;
+  importKey!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class InventoryDocumentItemDto {
   @IsUUID()
-  locationId!: string;
+  locationId!: string
 
   @IsUUID()
-  skuId!: string;
+  skuId!: string
 
   @IsOptional()
   @IsEnum(InventoryStockStatus)
-  stockStatus: InventoryStockStatus = InventoryStockStatus.AVAILABLE;
+  stockStatus: InventoryStockStatus = InventoryStockStatus.AVAILABLE
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsOptional()
   @IsNumberString()
-  unitCost?: string;
+  unitCost?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class CreateAdjustmentDto {
   @IsEnum(AdjustmentDirection)
-  direction!: AdjustmentDirection;
+  direction!: AdjustmentDirection
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(1000)
-  reason!: string;
+  reason!: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => InventoryDocumentItemDto)
-  items!: InventoryDocumentItemDto[];
+  items!: InventoryDocumentItemDto[]
 }
 
 export class TransferItemDto {
   @IsUUID()
-  skuId!: string;
+  skuId!: string
 
   @IsOptional()
   @IsEnum(InventoryStockStatus)
-  stockStatus: InventoryStockStatus = InventoryStockStatus.AVAILABLE;
+  stockStatus: InventoryStockStatus = InventoryStockStatus.AVAILABLE
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class CreateTransferDto {
   @IsUUID()
-  fromLocationId!: string;
+  fromLocationId!: string
 
   @IsUUID()
-  toLocationId!: string;
+  toLocationId!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => TransferItemDto)
-  items!: TransferItemDto[];
+  items!: TransferItemDto[]
 }
 
 export class ChannelAllocationItemDto {
   @IsUUID()
-  skuId!: string;
+  skuId!: string
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 }
 
 export class CreateChannelAllocationDto {
   @IsUUID()
-  salesChannelId!: string;
+  salesChannelId!: string
 
   @IsUUID()
-  locationId!: string;
+  locationId!: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => ChannelAllocationItemDto)
-  items!: ChannelAllocationItemDto[];
+  items!: ChannelAllocationItemDto[]
 }

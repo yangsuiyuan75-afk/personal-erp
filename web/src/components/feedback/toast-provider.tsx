@@ -1,23 +1,23 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import type { PropsWithChildren } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import type { PropsWithChildren } from 'react'
 
-type ToastKind = 'success' | 'error' | 'info';
+type ToastKind = 'success' | 'error' | 'info'
 interface ToastItem {
-  id: number;
-  message: string;
-  kind: ToastKind;
+  id: number
+  message: string
+  kind: ToastKind
 }
 
-const ToastContext = createContext<(message: string, kind?: ToastKind) => void>(() => undefined);
+const ToastContext = createContext<(message: string, kind?: ToastKind) => void>(() => undefined)
 
 export function ToastProvider({ children }: PropsWithChildren) {
-  const [items, setItems] = useState<ToastItem[]>([]);
+  const [items, setItems] = useState<ToastItem[]>([])
   const notify = useCallback((message: string, kind: ToastKind = 'info') => {
-    const id = Date.now();
-    setItems((current) => [...current, { id, message, kind }]);
-    window.setTimeout(() => setItems((current) => current.filter((item) => item.id !== id)), 3500);
-  }, []);
-  const value = useMemo(() => notify, [notify]);
+    const id = Date.now()
+    setItems((current) => [...current, { id, message, kind }])
+    window.setTimeout(() => setItems((current) => current.filter((item) => item.id !== id)), 3500)
+  }, [])
+  const value = useMemo(() => notify, [notify])
 
   return (
     <ToastContext.Provider value={value}>
@@ -30,7 +30,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
         ))}
       </div>
     </ToastContext.Provider>
-  );
+  )
 }
 
-export const useToast = () => useContext(ToastContext);
+export const useToast = () => useContext(ToastContext)

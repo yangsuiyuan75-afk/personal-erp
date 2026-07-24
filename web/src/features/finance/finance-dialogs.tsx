@@ -1,20 +1,20 @@
-import { Dialog } from '@base-ui/react/dialog';
-import { Minus, Plus, X } from 'lucide-react';
-import { useState } from 'react';
-import { useToast } from '@/components/feedback/toast-provider';
-import { Button } from '@/components/ui/button';
-import { DatePickerInput, thisMonth, today } from '@/components/ui/date-picker';
-import { Field, Input, Select, Textarea } from '@/components/ui/field';
-import type { MasterRow } from '@/features/master-data/api';
-import { useMasterOptions } from '@/features/master-data/use-master-data';
-import { apiErrorMessage } from '@/lib/api-error';
-import { useFinanceMutations, useFinanceOptions } from './use-finance';
+import { Dialog } from '@base-ui/react/dialog'
+import { Minus, Plus, X } from 'lucide-react'
+import { useState } from 'react'
+import { useToast } from '@/components/feedback/toast-provider'
+import { Button } from '@/components/ui/button'
+import { DatePickerInput, thisMonth, today } from '@/components/ui/date-picker'
+import { Field, Input, Select, Textarea } from '@/components/ui/field'
+import type { MasterRow } from '@/features/master-data/api'
+import { useMasterOptions } from '@/features/master-data/use-master-data'
+import { apiErrorMessage } from '@/lib/api-error'
+import { useFinanceMutations, useFinanceOptions } from './use-finance'
 
-export type FinanceDialogKind = 'account' | 'payment' | 'receipt' | 'adjustment' | 'expense';
+export type FinanceDialogKind = 'account' | 'payment' | 'receipt' | 'adjustment' | 'expense'
 
 interface DialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 function Shell({
@@ -44,7 +44,7 @@ function Shell({
         </Dialog.Viewport>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }
 
 function Actions({ pending, label }: { pending: boolean; label: string }) {
@@ -55,7 +55,7 @@ function Actions({ pending, label }: { pending: boolean; label: string }) {
         {pending ? '正在保存…' : label}
       </Button>
     </footer>
-  );
+  )
 }
 
 function Options({ rows }: { rows?: MasterRow[] }) {
@@ -63,28 +63,28 @@ function Options({ rows }: { rows?: MasterRow[] }) {
     <option key={row.id} value={row.id}>
       {row.code} · {row.name}
     </option>
-  ));
+  ))
 }
 
 function AccountDialog({ open, onOpenChange }: DialogProps) {
-  const mutations = useFinanceMutations();
-  const notify = useToast();
-  const [code, setCode] = useState('');
-  const [name, setName] = useState('');
-  const [type, setType] = useState('BANK');
+  const mutations = useFinanceMutations()
+  const notify = useToast()
+  const [code, setCode] = useState('')
+  const [name, setName] = useState('')
+  const [type, setType] = useState('BANK')
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!code.trim() || !name.trim()) return notify('请输入账户代码和名称', 'error');
+    event.preventDefault()
+    if (!code.trim() || !name.trim()) return notify('请输入账户代码和名称', 'error')
     try {
-      await mutations.account.mutateAsync({ code, name, type, currency: 'CNY' });
-      notify('资金账户已创建；余额将由已过账流水汇总', 'success');
-      setCode('');
-      setName('');
-      onOpenChange(false);
+      await mutations.account.mutateAsync({ code, name, type, currency: 'CNY' })
+      notify('资金账户已创建；余额将由已过账流水汇总', 'success')
+      setCode('')
+      setName('')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="账户余额不可手工覆盖；期初或修正必须使用账户调整单。"
@@ -117,14 +117,14 @@ function AccountDialog({ open, onOpenChange }: DialogProps) {
         <Actions label="创建账户" pending={mutations.account.isPending} />
       </form>
     </Shell>
-  );
+  )
 }
 
 interface PaymentLine {
-  targetId: string;
-  amount: string;
-  supplierCreditId: string;
-  creditAmount: string;
+  targetId: string
+  amount: string
+  supplierCreditId: string
+  creditAmount: string
 }
 
 const newPaymentLine = (): PaymentLine => ({
@@ -132,36 +132,36 @@ const newPaymentLine = (): PaymentLine => ({
   amount: '',
   supplierCreditId: '',
   creditAmount: '',
-});
+})
 
 function PaymentDialog({ open, onOpenChange }: DialogProps) {
-  const accounts = useFinanceOptions('accounts');
-  const payables = useFinanceOptions('payables');
-  const refunds = useFinanceOptions('refunds');
-  const credits = useFinanceOptions('credits');
-  const mutations = useFinanceMutations();
-  const notify = useToast();
-  const [accountId, setAccountId] = useState('');
-  const [targetType, setTargetType] = useState<'PAYABLE' | 'REFUND'>('PAYABLE');
-  const [amount, setAmount] = useState('');
-  const [occurredAt, setOccurredAt] = useState(today());
-  const [settlementPeriod, setSettlementPeriod] = useState(thisMonth());
-  const [remark, setRemark] = useState('');
-  const [lines, setLines] = useState<PaymentLine[]>([newPaymentLine()]);
+  const accounts = useFinanceOptions('accounts')
+  const payables = useFinanceOptions('payables')
+  const refunds = useFinanceOptions('refunds')
+  const credits = useFinanceOptions('credits')
+  const mutations = useFinanceMutations()
+  const notify = useToast()
+  const [accountId, setAccountId] = useState('')
+  const [targetType, setTargetType] = useState<'PAYABLE' | 'REFUND'>('PAYABLE')
+  const [amount, setAmount] = useState('')
+  const [occurredAt, setOccurredAt] = useState(today())
+  const [settlementPeriod, setSettlementPeriod] = useState(thisMonth())
+  const [remark, setRemark] = useState('')
+  const [lines, setLines] = useState<PaymentLine[]>([newPaymentLine()])
   const targets = (targetType === 'PAYABLE' ? payables.data?.data : refunds.data?.data)?.filter(
     (row) => !['SETTLED', 'PAID', 'VOID'].includes(String(row.status)),
-  );
+  )
   const creditRows = credits.data?.data.filter(
     (row) => !['APPLIED', 'VOID'].includes(String(row.status)),
-  );
+  )
   const update = (index: number, field: keyof PaymentLine, value: string) =>
     setLines((current) =>
       current.map((line, lineIndex) => (lineIndex === index ? { ...line, [field]: value } : line)),
-    );
+    )
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (!accountId || !amount || lines.some((line) => !line.targetId || line.amount === ''))
-      return notify('请完整填写账户、金额与分配目标', 'error');
+      return notify('请完整填写账户、金额与分配目标', 'error')
     try {
       const payment = await mutations.payment.mutateAsync({
         accountId,
@@ -177,16 +177,16 @@ function PaymentDialog({ open, onOpenChange }: DialogProps) {
           supplierCreditId: line.supplierCreditId || undefined,
           creditAmount: line.creditAmount || undefined,
         })),
-      });
-      await mutations.post.mutateAsync({ kind: 'payments', id: payment.id });
-      notify('付款已过账，应付/退款与真实资金流水已同步', 'success');
-      setLines([newPaymentLine()]);
-      setAmount('');
-      onOpenChange(false);
+      })
+      await mutations.post.mutateAsync({ kind: 'payments', id: payment.id })
+      notify('付款已过账，应付/退款与真实资金流水已同步', 'success')
+      setLines([newPaymentLine()])
+      setAmount('')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="支持部分付款和多目标分配；Supplier Credit 单独记录抵扣，不计入现金支出。"
@@ -205,8 +205,8 @@ function PaymentDialog({ open, onOpenChange }: DialogProps) {
           <Field label="付款类型">
             <Select
               onChange={(event) => {
-                setTargetType(event.target.value as 'PAYABLE' | 'REFUND');
-                setLines([newPaymentLine()]);
+                setTargetType(event.target.value as 'PAYABLE' | 'REFUND')
+                setLines([newPaymentLine()])
               }}
               value={targetType}
             >
@@ -307,40 +307,40 @@ function PaymentDialog({ open, onOpenChange }: DialogProps) {
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 interface ReceiptLine {
-  targetId: string;
-  amount: string;
+  targetId: string
+  amount: string
 }
 
-const newReceiptLine = (): ReceiptLine => ({ targetId: '', amount: '' });
+const newReceiptLine = (): ReceiptLine => ({ targetId: '', amount: '' })
 
 function ReceiptDialog({ open, onOpenChange }: DialogProps) {
-  const accounts = useFinanceOptions('accounts');
-  const receivables = useFinanceOptions('receivables');
-  const compensation = useFinanceOptions('compensation');
-  const mutations = useFinanceMutations();
-  const notify = useToast();
-  const [accountId, setAccountId] = useState('');
-  const [targetType, setTargetType] = useState<'SALES' | 'COMPENSATION'>('SALES');
-  const [amount, setAmount] = useState('');
-  const [occurredAt, setOccurredAt] = useState(today());
-  const [settlementPeriod, setSettlementPeriod] = useState(thisMonth());
-  const [remark, setRemark] = useState('');
-  const [lines, setLines] = useState<ReceiptLine[]>([newReceiptLine()]);
+  const accounts = useFinanceOptions('accounts')
+  const receivables = useFinanceOptions('receivables')
+  const compensation = useFinanceOptions('compensation')
+  const mutations = useFinanceMutations()
+  const notify = useToast()
+  const [accountId, setAccountId] = useState('')
+  const [targetType, setTargetType] = useState<'SALES' | 'COMPENSATION'>('SALES')
+  const [amount, setAmount] = useState('')
+  const [occurredAt, setOccurredAt] = useState(today())
+  const [settlementPeriod, setSettlementPeriod] = useState(thisMonth())
+  const [remark, setRemark] = useState('')
+  const [lines, setLines] = useState<ReceiptLine[]>([newReceiptLine()])
   const targets = (
     targetType === 'SALES' ? receivables.data?.data : compensation.data?.data
-  )?.filter((row) => !['SETTLED', 'VOID'].includes(String(row.status)));
+  )?.filter((row) => !['SETTLED', 'VOID'].includes(String(row.status)))
   const update = (index: number, field: keyof ReceiptLine, value: string) =>
     setLines((current) =>
       current.map((line, lineIndex) => (lineIndex === index ? { ...line, [field]: value } : line)),
-    );
+    )
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (!accountId || !amount || lines.some((line) => !line.targetId || !line.amount))
-      return notify('请完整填写账户、金额与收款分配', 'error');
+      return notify('请完整填写账户、金额与收款分配', 'error')
     try {
       const receipt = await mutations.receipt.mutateAsync({
         accountId,
@@ -354,16 +354,16 @@ function ReceiptDialog({ open, onOpenChange }: DialogProps) {
             : { supplierCompensationReceivableId: line.targetId }),
           amount: line.amount,
         })),
-      });
-      await mutations.post.mutateAsync({ kind: 'receipts', id: receipt.id });
-      notify('收款已过账，应收与真实资金流水已同步', 'success');
-      setLines([newReceiptLine()]);
-      setAmount('');
-      onOpenChange(false);
+      })
+      await mutations.post.mutateAsync({ kind: 'receipts', id: receipt.id })
+      notify('收款已过账，应收与真实资金流水已同步', 'success')
+      setLines([newReceiptLine()])
+      setAmount('')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="销售回款与供应商赔付分别入账；支持一张收款单分配多个同类应收。"
@@ -382,8 +382,8 @@ function ReceiptDialog({ open, onOpenChange }: DialogProps) {
           <Field label="收款类型">
             <Select
               onChange={(event) => {
-                setTargetType(event.target.value as 'SALES' | 'COMPENSATION');
-                setLines([newReceiptLine()]);
+                setTargetType(event.target.value as 'SALES' | 'COMPENSATION')
+                setLines([newReceiptLine()])
               }}
               value={targetType}
             >
@@ -459,23 +459,23 @@ function ReceiptDialog({ open, onOpenChange }: DialogProps) {
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 function ExpenseDialog({ open, onOpenChange }: DialogProps) {
-  const accounts = useFinanceOptions('accounts');
-  const mutations = useFinanceMutations();
-  const notify = useToast();
-  const [accountId, setAccountId] = useState('');
-  const [expenseCategory, setExpenseCategory] = useState('OFFICE_SUPPLIES');
-  const [reason, setReason] = useState('');
-  const [payee, setPayee] = useState('');
-  const [amount, setAmount] = useState('');
-  const [occurredAt, setOccurredAt] = useState(today());
+  const accounts = useFinanceOptions('accounts')
+  const mutations = useFinanceMutations()
+  const notify = useToast()
+  const [accountId, setAccountId] = useState('')
+  const [expenseCategory, setExpenseCategory] = useState('OFFICE_SUPPLIES')
+  const [reason, setReason] = useState('')
+  const [payee, setPayee] = useState('')
+  const [amount, setAmount] = useState('')
+  const [occurredAt, setOccurredAt] = useState(today())
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (!accountId || !reason.trim() || !payee.trim() || !amount)
-      return notify('请完整填写开销事项、收款方、账户和金额', 'error');
+      return notify('请完整填写开销事项、收款方、账户和金额', 'error')
     try {
       await mutations.expense.mutateAsync({
         accountId,
@@ -484,16 +484,16 @@ function ExpenseDialog({ open, onOpenChange }: DialogProps) {
         payee,
         amount,
         occurredAt: new Date(occurredAt).toISOString(),
-      });
-      notify('开销账单已保存为草稿，过账后进入财务汇总', 'success');
-      setReason('');
-      setPayee('');
-      setAmount('');
-      onOpenChange(false);
+      })
+      notify('开销账单已保存为草稿，过账后进入财务汇总', 'success')
+      setReason('')
+      setPayee('')
+      setAmount('')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   return (
     <Shell
       description="先保存账单，确认无误后过账；过账会扣减资金账户并进入月度财务汇总。"
@@ -542,29 +542,29 @@ function ExpenseDialog({ open, onOpenChange }: DialogProps) {
         <Actions label="保存开销账单" pending={mutations.expense.isPending} />
       </form>
     </Shell>
-  );
+  )
 }
 
 function AdjustmentDialog({ open, onOpenChange }: DialogProps) {
-  const accounts = useFinanceOptions('accounts');
-  const salesChannels = useMasterOptions('sales-channels');
-  const customers = useMasterOptions('customers');
-  const suppliers = useMasterOptions('suppliers');
-  const purchaseChannels = useMasterOptions('purchase-channels');
-  const buyers = useMasterOptions('buyers');
-  const mutations = useFinanceMutations();
-  const notify = useToast();
-  const [accountId, setAccountId] = useState('');
-  const [direction, setDirection] = useState('OUT');
-  const [category, setCategory] = useState('OTHER_EXPENSE');
-  const [amount, setAmount] = useState('');
-  const [occurredAt, setOccurredAt] = useState(today());
-  const [reason, setReason] = useState('');
-  const [dimensions, setDimensions] = useState<Record<string, string>>({});
+  const accounts = useFinanceOptions('accounts')
+  const salesChannels = useMasterOptions('sales-channels')
+  const customers = useMasterOptions('customers')
+  const suppliers = useMasterOptions('suppliers')
+  const purchaseChannels = useMasterOptions('purchase-channels')
+  const buyers = useMasterOptions('buyers')
+  const mutations = useFinanceMutations()
+  const notify = useToast()
+  const [accountId, setAccountId] = useState('')
+  const [direction, setDirection] = useState('OUT')
+  const [category, setCategory] = useState('OTHER_EXPENSE')
+  const [amount, setAmount] = useState('')
+  const [occurredAt, setOccurredAt] = useState(today())
+  const [reason, setReason] = useState('')
+  const [dimensions, setDimensions] = useState<Record<string, string>>({})
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (!accountId || !amount || !reason.trim())
-      return notify('请完整填写账户、金额和原因', 'error');
+      return notify('请完整填写账户、金额和原因', 'error')
     try {
       const adjustment = await mutations.adjustment.mutateAsync({
         accountId,
@@ -574,23 +574,23 @@ function AdjustmentDialog({ open, onOpenChange }: DialogProps) {
         occurredAt: new Date(occurredAt).toISOString(),
         reason,
         ...Object.fromEntries(Object.entries(dimensions).filter(([, value]) => value)),
-      });
-      await mutations.post.mutateAsync({ kind: 'adjustments', id: adjustment.id });
-      notify('账户调整已过账并形成资金流水', 'success');
-      setAmount('');
-      setReason('');
-      onOpenChange(false);
+      })
+      await mutations.post.mutateAsync({ kind: 'adjustments', id: adjustment.id })
+      notify('账户调整已过账并形成资金流水', 'success')
+      setAmount('')
+      setReason('')
+      onOpenChange(false)
     } catch (error) {
-      notify(apiErrorMessage(error), 'error');
+      notify(apiErrorMessage(error), 'error')
     }
-  };
+  }
   const dimensionFields: Array<[string, string, MasterRow[] | undefined]> = [
     ['salesChannelId', '销售渠道', salesChannels.data?.data],
     ['customerId', '客户', customers.data?.data],
     ['supplierId', '供应商', suppliers.data?.data],
     ['purchaseChannelId', '采购渠道', purchaseChannels.data?.data],
     ['buyerId', '采购员', buyers.data?.data],
-  ];
+  ]
   return (
     <Shell
       description="用于期初、平台费、物流费和其他真实费用；选择维度后可进入月度分析。"
@@ -654,38 +654,38 @@ function AdjustmentDialog({ open, onOpenChange }: DialogProps) {
         />
       </form>
     </Shell>
-  );
+  )
 }
 
 export function FinanceDialogs({
   active,
   onOpenChange,
 }: {
-  active?: FinanceDialogKind;
-  onOpenChange: (kind?: FinanceDialogKind) => void;
+  active?: FinanceDialogKind
+  onOpenChange: (kind?: FinanceDialogKind) => void
 }) {
   if (active === 'account')
     return (
       <AccountDialog onOpenChange={(open) => onOpenChange(open ? 'account' : undefined)} open />
-    );
+    )
   if (active === 'payment')
     return (
       <PaymentDialog onOpenChange={(open) => onOpenChange(open ? 'payment' : undefined)} open />
-    );
+    )
   if (active === 'receipt')
     return (
       <ReceiptDialog onOpenChange={(open) => onOpenChange(open ? 'receipt' : undefined)} open />
-    );
+    )
   if (active === 'adjustment')
     return (
       <AdjustmentDialog
         onOpenChange={(open) => onOpenChange(open ? 'adjustment' : undefined)}
         open
       />
-    );
+    )
   if (active === 'expense')
     return (
       <ExpenseDialog onOpenChange={(open) => onOpenChange(open ? 'expense' : undefined)} open />
-    );
-  return null;
+    )
+  return null
 }

@@ -17,13 +17,13 @@ import {
   StreamableFile,
   UploadedFile,
   UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { RequestWithId } from '../../common/middleware/request-id.middleware';
-import type { AuthUser } from '../auth/auth.types';
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger'
+import type { Response } from 'express'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import type { RequestWithId } from '../../common/middleware/request-id.middleware'
+import type { AuthUser } from '../auth/auth.types'
 import {
   CreateAdjustmentDto,
   CreateChannelAllocationDto,
@@ -33,8 +33,8 @@ import {
   InventoryQueryDto,
   OpeningRowsDto,
   UpdateLocationDto,
-} from './dto/inventory.dto';
-import { InventoryService } from './inventory.service';
+} from './dto/inventory.dto'
+import { InventoryService } from './inventory.service'
 
 @ApiTags('Inventory')
 @ApiBearerAuth()
@@ -44,7 +44,7 @@ export class InventoryController {
 
   @Get('locations')
   listLocations(@Query() query: InventoryQueryDto) {
-    return this.inventory.listLocations(query);
+    return this.inventory.listLocations(query)
   }
 
   @Post('locations')
@@ -53,7 +53,7 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.createLocation(payload, actor, request.requestId);
+    return this.inventory.createLocation(payload, actor, request.requestId)
   }
 
   @Patch('locations/:id')
@@ -63,7 +63,7 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.updateLocation(id, payload, actor, request.requestId);
+    return this.inventory.updateLocation(id, payload, actor, request.requestId)
   }
 
   @Delete('locations/:id')
@@ -73,27 +73,27 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.deactivateLocation(id, actor, request.requestId);
+    return this.inventory.deactivateLocation(id, actor, request.requestId)
   }
 
   @Get('balances')
   balances(@Query() query: InventoryQueryDto) {
-    return this.inventory.listBalances(query);
+    return this.inventory.listBalances(query)
   }
 
   @Get('transactions')
   transactions(@Query() query: InventoryQueryDto) {
-    return this.inventory.listTransactions(query);
+    return this.inventory.listTransactions(query)
   }
 
   @Get('transactions/:id')
   transaction(@Param('id', ParseUUIDPipe) id: string) {
-    return this.inventory.transaction(id);
+    return this.inventory.transaction(id)
   }
 
   @Get('batches')
   batches(@Query() query: InventoryQueryDto) {
-    return this.inventory.listBatches(query);
+    return this.inventory.listBatches(query)
   }
 
   @Get('openings/template')
@@ -102,13 +102,13 @@ export class InventoryController {
     response.setHeader(
       'content-disposition',
       `attachment; filename*=UTF-8''${encodeURIComponent('期初库存模板.csv')}`,
-    );
-    return new StreamableFile(this.inventory.openingTemplate());
+    )
+    return new StreamableFile(this.inventory.openingTemplate())
   }
 
   @Post('openings/preview')
   previewOpening(@Body() payload: OpeningRowsDto) {
-    return this.inventory.previewOpening(payload.rows);
+    return this.inventory.previewOpening(payload.rows)
   }
 
   @Post('openings/preview-file')
@@ -117,19 +117,19 @@ export class InventoryController {
   previewOpeningFile(
     @UploadedFile()
     file?: {
-      buffer: Buffer;
-      originalname: string;
-      mimetype: string;
+      buffer: Buffer
+      originalname: string
+      mimetype: string
     },
   ) {
-    if (!file) throw new BadRequestException({ code: 'FILE_REQUIRED', message: '请选择 CSV 文件' });
-    const rows = this.inventory.openingRowsFromCsv(file.buffer);
-    return this.inventory.previewOpening(rows);
+    if (!file) throw new BadRequestException({ code: 'FILE_REQUIRED', message: '请选择 CSV 文件' })
+    const rows = this.inventory.openingRowsFromCsv(file.buffer)
+    return this.inventory.previewOpening(rows)
   }
 
   @Get('openings')
   openings(@Query() query: InventoryQueryDto) {
-    return this.inventory.listDocuments('openings', query);
+    return this.inventory.listDocuments('openings', query)
   }
 
   @Post('openings')
@@ -138,7 +138,7 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.createOpening(payload, actor, request.requestId);
+    return this.inventory.createOpening(payload, actor, request.requestId)
   }
 
   @Post('openings/:id/post')
@@ -148,12 +148,12 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.postOpening(id, idempotencyKey, actor, request.requestId);
+    return this.inventory.postOpening(id, idempotencyKey, actor, request.requestId)
   }
 
   @Get('adjustments')
   adjustments(@Query() query: InventoryQueryDto) {
-    return this.inventory.listDocuments('adjustments', query);
+    return this.inventory.listDocuments('adjustments', query)
   }
 
   @Post('adjustments')
@@ -162,7 +162,7 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.createAdjustment(payload, actor, request.requestId);
+    return this.inventory.createAdjustment(payload, actor, request.requestId)
   }
 
   @Post('adjustments/:id/post')
@@ -172,12 +172,12 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.postAdjustment(id, idempotencyKey, actor, request.requestId);
+    return this.inventory.postAdjustment(id, idempotencyKey, actor, request.requestId)
   }
 
   @Get('transfers')
   transfers(@Query() query: InventoryQueryDto) {
-    return this.inventory.listDocuments('transfers', query);
+    return this.inventory.listDocuments('transfers', query)
   }
 
   @Post('transfers')
@@ -186,7 +186,7 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.createTransfer(payload, actor, request.requestId);
+    return this.inventory.createTransfer(payload, actor, request.requestId)
   }
 
   @Post('transfers/:id/post')
@@ -196,7 +196,7 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.postTransfer(id, idempotencyKey, actor, request.requestId);
+    return this.inventory.postTransfer(id, idempotencyKey, actor, request.requestId)
   }
 
   @Post('channel-allocations')
@@ -205,6 +205,6 @@ export class InventoryController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.inventory.createChannelAllocation(payload, actor, request.requestId);
+    return this.inventory.createChannelAllocation(payload, actor, request.requestId)
   }
 }

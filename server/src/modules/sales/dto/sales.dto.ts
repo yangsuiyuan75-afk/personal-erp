@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -13,232 +13,232 @@ import {
   Length,
   MaxLength,
   ValidateNested,
-} from 'class-validator';
-import { MasterDataStatus } from '@prisma/client';
-import { ListQueryDto } from '../../../common/dto/list-query.dto';
+} from 'class-validator'
+import { MasterDataStatus } from '@prisma/client'
+import { ListQueryDto } from '../../../common/dto/list-query.dto'
 
 export class SalesQueryDto extends ListQueryDto {
   @IsOptional()
   @IsUUID()
-  customerId?: string;
+  customerId?: string
 
   @IsOptional()
   @IsUUID()
-  skuId?: string;
+  skuId?: string
 
   @IsOptional()
   @IsUUID()
-  locationId?: string;
+  locationId?: string
 
   @IsOptional()
   @IsString()
-  documentStatus?: string;
+  documentStatus?: string
 }
 
 export class ResolveSalesPriceDto {
   @IsUUID()
-  skuId!: string;
+  skuId!: string
 
   @IsUUID()
-  salesChannelId!: string;
+  salesChannelId!: string
 
   @IsOptional()
   @IsUUID()
-  customerId?: string;
+  customerId?: string
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  at?: string;
+  at?: string
 }
 
 export class CreateSalesPriceDto {
   @IsUUID()
-  skuId!: string;
+  skuId!: string
 
   @IsOptional()
   @IsUUID()
-  salesChannelId?: string;
+  salesChannelId?: string
 
   @IsOptional()
   @IsUUID()
-  customerId?: string;
+  customerId?: string
 
   @IsOptional()
   @IsString()
   @Length(3, 3)
-  currency = 'CNY';
+  currency = 'CNY'
 
   @IsNumberString()
-  price!: string;
+  price!: string
 
   @IsNumberString()
-  minQuantity!: string;
+  minQuantity!: string
 
   @IsISO8601({ strict: true })
-  effectiveFrom!: string;
+  effectiveFrom!: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  effectiveTo?: string;
+  effectiveTo?: string
 }
 
 export class UpdateSalesPriceDto {
   @IsOptional()
   @IsNumberString()
-  price?: string;
+  price?: string
 
   @IsOptional()
   @IsNumberString()
-  minQuantity?: string;
+  minQuantity?: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  effectiveFrom?: string;
+  effectiveFrom?: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  effectiveTo?: string;
+  effectiveTo?: string
 
   @IsOptional()
   @IsEnum(MasterDataStatus)
-  status?: MasterDataStatus;
+  status?: MasterDataStatus
 }
 
 export class SalesOrderItemDto {
   @IsUUID()
-  skuId!: string;
+  skuId!: string
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsOptional()
   @IsNumberString()
-  unitPrice?: string;
+  unitPrice?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class CreateSalesOrderDto {
   @IsUUID()
-  salesChannelId!: string;
+  salesChannelId!: string
 
   @IsOptional()
   @IsUUID()
-  customerId?: string;
+  customerId?: string
 
   @IsOptional()
   @IsString()
   @Length(3, 3)
-  currency = 'CNY';
+  currency = 'CNY'
 
   @IsISO8601({ strict: true })
-  orderDate!: string;
+  orderDate!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => SalesOrderItemDto)
-  items!: SalesOrderItemDto[];
+  items!: SalesOrderItemDto[]
 }
 
 export class SalesIssueItemDto {
   @IsUUID()
-  salesOrderItemId!: string;
+  salesOrderItemId!: string
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class CreateSalesIssueDto {
   @IsUUID()
-  salesOrderId!: string;
+  salesOrderId!: string
 
   @IsUUID()
-  locationId!: string;
+  locationId!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => SalesIssueItemDto)
-  items!: SalesIssueItemDto[];
+  items!: SalesIssueItemDto[]
 }
 
 export class UpdateSalesIssueDto {
   @IsUUID()
-  locationId!: string;
+  locationId!: string
 
   @IsOptional()
   @IsNumberString()
-  quantity?: string;
+  quantity?: string
 
   @IsOptional()
   @IsISO8601({ strict: true })
-  occurredAt?: string;
+  occurredAt?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class SalesReturnItemDto {
   @IsUUID()
-  salesIssueItemId!: string;
+  salesIssueItemId!: string
 
   @IsNumberString()
-  quantity!: string;
+  quantity!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  remark?: string;
+  remark?: string
 }
 
 export class CreateSalesReturnDto {
   @IsUUID()
-  salesIssueId!: string;
+  salesIssueId!: string
 
   @IsUUID()
-  qcLocationId!: string;
+  qcLocationId!: string
 
   @IsISO8601({ strict: true })
-  occurredAt!: string;
+  occurredAt!: string
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(1000)
-  reason!: string;
+  reason!: string
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => SalesReturnItemDto)
-  items!: SalesReturnItemDto[];
+  items!: SalesReturnItemDto[]
 }

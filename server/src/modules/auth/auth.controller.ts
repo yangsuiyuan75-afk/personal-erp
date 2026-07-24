@@ -1,14 +1,14 @@
-import { Body, Controller, Get, Patch, Post, Req, Res } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Request, Response } from 'express';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Public } from '../../common/decorators/public.decorator';
-import type { RequestWithId } from '../../common/middleware/request-id.middleware';
-import { AuthService } from './auth.service';
-import type { AuthUser } from './auth.types';
-import { ChangePasswordDto, CredentialsDto } from './dto/auth.dto';
+import { Body, Controller, Get, Patch, Post, Req, Res } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
+import type { Request, Response } from 'express'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import { Public } from '../../common/decorators/public.decorator'
+import type { RequestWithId } from '../../common/middleware/request-id.middleware'
+import { AuthService } from './auth.service'
+import type { AuthUser } from './auth.types'
+import { ChangePasswordDto, CredentialsDto } from './dto/auth.dto'
 
-const COOKIE_NAME = 'perp_refresh';
+const COOKIE_NAME = 'perp_refresh'
 
 function setRefreshCookie(response: Response, token: string, expires: Date): void {
   response.cookie(COOKIE_NAME, token, {
@@ -17,7 +17,7 @@ function setRefreshCookie(response: Response, token: string, expires: Date): voi
     secure: process.env.NODE_ENV === 'production',
     expires,
     path: '/api/v1/auth',
-  });
+  })
 }
 
 @ApiTags('Auth')
@@ -28,7 +28,7 @@ export class AuthController {
   @Public()
   @Get('status')
   status() {
-    return this.authService.status();
+    return this.authService.status()
   }
 
   @Public()
@@ -39,9 +39,9 @@ export class AuthController {
     @Req() request: RequestWithId,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.authService.bootstrap(dto, request.requestId);
-    setRefreshCookie(response, result.refreshToken, result.refreshExpiresAt);
-    return { user: result.user, accessToken: result.accessToken };
+    const result = await this.authService.bootstrap(dto, request.requestId)
+    setRefreshCookie(response, result.refreshToken, result.refreshExpiresAt)
+    return { user: result.user, accessToken: result.accessToken }
   }
 
   @Public()
@@ -51,31 +51,31 @@ export class AuthController {
     @Req() request: RequestWithId,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.authService.login(dto, request.requestId);
-    setRefreshCookie(response, result.refreshToken, result.refreshExpiresAt);
-    return { user: result.user, accessToken: result.accessToken };
+    const result = await this.authService.login(dto, request.requestId)
+    setRefreshCookie(response, result.refreshToken, result.refreshExpiresAt)
+    return { user: result.user, accessToken: result.accessToken }
   }
 
   @Public()
   @Post('refresh')
   async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    const result = await this.authService.refresh(request.cookies?.[COOKIE_NAME]);
-    setRefreshCookie(response, result.refreshToken, result.refreshExpiresAt);
-    return { user: result.user, accessToken: result.accessToken };
+    const result = await this.authService.refresh(request.cookies?.[COOKIE_NAME])
+    setRefreshCookie(response, result.refreshToken, result.refreshExpiresAt)
+    return { user: result.user, accessToken: result.accessToken }
   }
 
   @Public()
   @Post('logout')
   async logout(@Req() request: RequestWithId, @Res({ passthrough: true }) response: Response) {
-    await this.authService.logout(request.cookies?.[COOKIE_NAME], undefined, request.requestId);
-    response.clearCookie(COOKIE_NAME, { path: '/api/v1/auth' });
-    return { success: true };
+    await this.authService.logout(request.cookies?.[COOKIE_NAME], undefined, request.requestId)
+    response.clearCookie(COOKIE_NAME, { path: '/api/v1/auth' })
+    return { success: true }
   }
 
   @ApiBearerAuth()
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
-    return this.authService.me(user.id);
+    return this.authService.me(user.id)
   }
 
   @ApiBearerAuth()
@@ -85,7 +85,7 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
     @Req() request: RequestWithId,
   ) {
-    await this.authService.changePassword(user, dto, request.requestId);
-    return { success: true };
+    await this.authService.changePassword(user, dto, request.requestId)
+    return { success: true }
   }
 }

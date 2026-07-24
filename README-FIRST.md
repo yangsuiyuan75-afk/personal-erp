@@ -34,7 +34,7 @@ JWT_REFRESH_SECRET=另一段至少32字符的随机值
 BOOTSTRAP_RECOVERY_KEY=至少16字符的本地恢复密钥
 ```
 
-如果 5432 已被占用，同时修改 `POSTGRES_PORT` 和 `DATABASE_URL` 中的端口。本工作区当前使用 5434；全新安装可继续使用默认 5432。
+如果端口被占用或被 Windows 保留，同时修改 `POSTGRES_PORT`、`POSTGRES_TEST_PORT`、`DATABASE_URL` 和 `TEST_DATABASE_URL` 中的端口。本工作区当前使用主库 5551、测试库 5552；全新安装可继续使用默认 5432/5433。
 
 启动数据库并应用全部 Migration：
 

@@ -1,8 +1,8 @@
-import type { RequestWithId } from '../../common/middleware/request-id.middleware';
+import type { RequestWithId } from '../../common/middleware/request-id.middleware'
 
 export interface AuthUser {
-  id: string;
-  username: string;
+  id: string
+  username: string
 }
 
-export type AuthenticatedRequest = RequestWithId & { user: AuthUser };
+export type AuthenticatedRequest = RequestWithId & { user: AuthUser }

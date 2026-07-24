@@ -9,11 +9,11 @@ import {
   Post,
   Query,
   Req,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { RequestWithId } from '../../common/middleware/request-id.middleware';
-import type { AuthUser } from '../auth/auth.types';
+} from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import type { RequestWithId } from '../../common/middleware/request-id.middleware'
+import type { AuthUser } from '../auth/auth.types'
 import {
   CreateAccountAdjustmentDto,
   CreateExpenseBillDto,
@@ -22,8 +22,8 @@ import {
   CreateReceiptDto,
   FinanceQueryDto,
   UpdateFinancialAccountDto,
-} from './dto/finance.dto';
-import { FinanceService } from './finance.service';
+} from './dto/finance.dto'
+import { FinanceService } from './finance.service'
 
 @ApiTags('Finance')
 @ApiBearerAuth()
@@ -33,7 +33,7 @@ export class FinanceController {
 
   @Get('accounts')
   accounts(@Query() query: FinanceQueryDto) {
-    return this.finance.listAccounts(query);
+    return this.finance.listAccounts(query)
   }
 
   @Post('accounts')
@@ -42,7 +42,7 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.createAccount(payload, actor, request.requestId);
+    return this.finance.createAccount(payload, actor, request.requestId)
   }
 
   @Patch('accounts/:id')
@@ -52,22 +52,22 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.updateAccount(id, payload, actor, request.requestId);
+    return this.finance.updateAccount(id, payload, actor, request.requestId)
   }
 
   @Get('payables')
   payables(@Query() query: FinanceQueryDto) {
-    return this.finance.listPayables(query);
+    return this.finance.listPayables(query)
   }
 
   @Get('receivables')
   receivables(@Query() query: FinanceQueryDto) {
-    return this.finance.listReceivables(query);
+    return this.finance.listReceivables(query)
   }
 
   @Get('payments')
   payments(@Query() query: FinanceQueryDto) {
-    return this.finance.listPayments(query);
+    return this.finance.listPayments(query)
   }
 
   @Post('payments')
@@ -76,7 +76,7 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.createPayment(payload, actor, request.requestId);
+    return this.finance.createPayment(payload, actor, request.requestId)
   }
 
   @Post('payments/:id/post')
@@ -86,12 +86,12 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.postPayment(id, idempotencyKey, actor, request.requestId);
+    return this.finance.postPayment(id, idempotencyKey, actor, request.requestId)
   }
 
   @Get('receipts')
   receipts(@Query() query: FinanceQueryDto) {
-    return this.finance.listReceipts(query);
+    return this.finance.listReceipts(query)
   }
 
   @Post('receipts')
@@ -100,7 +100,7 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.createReceipt(payload, actor, request.requestId);
+    return this.finance.createReceipt(payload, actor, request.requestId)
   }
 
   @Post('receipts/:id/post')
@@ -110,17 +110,17 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.postReceipt(id, idempotencyKey, actor, request.requestId);
+    return this.finance.postReceipt(id, idempotencyKey, actor, request.requestId)
   }
 
   @Get('adjustments')
   adjustments(@Query() query: FinanceQueryDto) {
-    return this.finance.listAdjustments(query);
+    return this.finance.listAdjustments(query)
   }
 
   @Get('expenses')
   expenses(@Query() query: FinanceQueryDto) {
-    return this.finance.listExpenseBills(query);
+    return this.finance.listExpenseBills(query)
   }
 
   @Post('expenses')
@@ -129,7 +129,7 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.createExpenseBill(payload, actor, request.requestId);
+    return this.finance.createExpenseBill(payload, actor, request.requestId)
   }
 
   @Post('expenses/:id/post')
@@ -139,7 +139,7 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.postExpenseBill(id, idempotencyKey, actor, request.requestId);
+    return this.finance.postExpenseBill(id, idempotencyKey, actor, request.requestId)
   }
 
   @Post('adjustments')
@@ -148,7 +148,7 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.createAdjustment(payload, actor, request.requestId);
+    return this.finance.createAdjustment(payload, actor, request.requestId)
   }
 
   @Post('adjustments/:id/post')
@@ -158,16 +158,16 @@ export class FinanceController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.finance.postAdjustment(id, idempotencyKey, actor, request.requestId);
+    return this.finance.postAdjustment(id, idempotencyKey, actor, request.requestId)
   }
 
   @Get('transactions')
   transactions(@Query() query: FinanceQueryDto) {
-    return this.finance.listTransactions(query);
+    return this.finance.listTransactions(query)
   }
 
   @Get('analytics')
   analytics(@Query() query: FinanceQueryDto) {
-    return this.finance.analytics(query);
+    return this.finance.analytics(query)
   }
 }

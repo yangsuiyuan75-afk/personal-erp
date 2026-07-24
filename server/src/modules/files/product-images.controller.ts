@@ -11,14 +11,14 @@ import {
   StreamableFile,
   UploadedFiles,
   UseInterceptors,
-} from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { RequestWithId } from '../../common/middleware/request-id.middleware';
-import type { AuthUser } from '../auth/auth.types';
-import { FilesService } from './files.service';
+} from '@nestjs/common'
+import { FilesInterceptor } from '@nestjs/platform-express'
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger'
+import type { Response } from 'express'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import type { RequestWithId } from '../../common/middleware/request-id.middleware'
+import type { AuthUser } from '../auth/auth.types'
+import { FilesService } from './files.service'
 
 @ApiTags('Product Images')
 @ApiBearerAuth()
@@ -28,7 +28,7 @@ export class ProductImagesController {
 
   @Get()
   list(@Param('productId', ParseUUIDPipe) productId: string) {
-    return this.files.productImages(productId);
+    return this.files.productImages(productId)
   }
 
   @Get(':fileAssetId/content')
@@ -37,16 +37,16 @@ export class ProductImagesController {
     @Param('fileAssetId', ParseUUIDPipe) fileAssetId: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const file = await this.files.productImageContent(productId, fileAssetId);
-    response.setHeader('content-type', file.mimeType);
-    response.setHeader('x-content-type-options', 'nosniff');
-    response.setHeader('cache-control', 'private, max-age=300');
+    const file = await this.files.productImageContent(productId, fileAssetId)
+    response.setHeader('content-type', file.mimeType)
+    response.setHeader('x-content-type-options', 'nosniff')
+    response.setHeader('cache-control', 'private, max-age=300')
     response.setHeader(
       'content-disposition',
       `inline; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
-    );
-    if (file.eTag) response.setHeader('etag', file.eTag);
-    return new StreamableFile(file.content);
+    )
+    if (file.eTag) response.setHeader('etag', file.eTag)
+    return new StreamableFile(file.content)
   }
 
   @Post()
@@ -58,7 +58,7 @@ export class ProductImagesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ) {
-    return this.files.uploadProductImages(productId, files ?? [], actor, request.requestId);
+    return this.files.uploadProductImages(productId, files ?? [], actor, request.requestId)
   }
 
   @Delete(':imageId')
@@ -69,6 +69,6 @@ export class ProductImagesController {
     @CurrentUser() actor: AuthUser,
     @Req() request: RequestWithId,
   ): Promise<void> {
-    await this.files.deleteProductImage(productId, imageId, actor, request.requestId);
+    await this.files.deleteProductImage(productId, imageId, actor, request.requestId)
   }
 }

@@ -5,8 +5,8 @@ import {
   type ColumnDef,
   type RowSelectionState,
   type VisibilityState,
-} from '@tanstack/react-table';
-import { Dialog } from '@base-ui/react/dialog';
+} from '@tanstack/react-table'
+import { Dialog } from '@base-ui/react/dialog'
 import {
   ChevronDown,
   ChevronLeft,
@@ -15,13 +15,13 @@ import {
   Columns3,
   Eye,
   RotateCcw,
-} from 'lucide-react';
-import { Fragment, useEffect, useState, type ReactNode } from 'react';
-import type { MasterRow, PageMeta } from '@/features/master-data/api';
-import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/field';
-import { formatDate } from '@/lib/date';
-import { auditActionLabel, enumLabel } from '@/lib/enum-label';
+} from 'lucide-react'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import type { MasterRow, PageMeta } from '@/features/master-data/api'
+import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/field'
+import { formatDate } from '@/lib/date'
+import { auditActionLabel, enumLabel } from '@/lib/enum-label'
 
 const DETAIL_LABELS: Record<string, string> = {
   module: '所属模块',
@@ -179,7 +179,7 @@ const DETAIL_LABELS: Record<string, string> = {
   purchases: '采购单据',
   transactions: '库存流水',
   qualityIssues: '质量问题',
-};
+}
 
 const DETAIL_EXTRA_KEYS = new Set([
   'after',
@@ -200,7 +200,7 @@ const DETAIL_EXTRA_KEYS = new Set([
   'cloudUploadedAt',
   'appVersion',
   'postgresVersion',
-]);
+])
 
 const COMPACT_REFERENCE_KEYS = new Set([
   'account',
@@ -215,7 +215,7 @@ const COMPACT_REFERENCE_KEYS = new Set([
   'salesChannel',
   'sku',
   'supplier',
-]);
+])
 
 const DATE_ONLY_KEYS = new Set([
   'dueAt',
@@ -227,7 +227,7 @@ const DATE_ONLY_KEYS = new Set([
   'orderDate',
   'receivedAt',
   'submittedAt',
-]);
+])
 
 const MONEY_KEYS = new Set([
   'adjustedAmount',
@@ -255,26 +255,26 @@ const MONEY_KEYS = new Set([
   'totalRevenue',
   'unitCost',
   'unitPrice',
-]);
+])
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export interface DataTableColumn {
-  key: string;
-  label: string;
-  sortable?: boolean;
-  render?: (row: MasterRow) => ReactNode;
+  key: string
+  label: string
+  sortable?: boolean
+  render?: (row: MasterRow) => ReactNode
 }
 
 function deepValue(row: MasterRow, key: string): unknown {
   return key.split('.').reduce<unknown>((value, part) => {
-    if (value && typeof value === 'object') return (value as Record<string, unknown>)[part];
-    return undefined;
-  }, row);
+    if (value && typeof value === 'object') return (value as Record<string, unknown>)[part]
+    return undefined
+  }, row)
 }
 
 function displayValue(value: unknown): ReactNode {
-  if (value == null || value === '') return <span className="muted">—</span>;
+  if (value == null || value === '') return <span className="muted">—</span>
   if (Array.isArray(value)) {
     return value
       .map((item) =>
@@ -282,17 +282,17 @@ function displayValue(value: unknown): ReactNode {
           ? String((item as { purchaseChannel: { name: string } }).purchaseChannel.name)
           : String(item),
       )
-      .join('、');
+      .join('、')
   }
-  if (typeof value === 'object') return JSON.stringify(value);
+  if (typeof value === 'object') return JSON.stringify(value)
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
-    return formatDate(value);
+    return formatDate(value)
   }
-  return enumLabel(value);
+  return enumLabel(value)
 }
 
 function detailLabel(key: string, labels?: Record<string, string>): string {
-  return labels?.[key] ?? DETAIL_LABELS[key] ?? key;
+  return labels?.[key] ?? DETAIL_LABELS[key] ?? key
 }
 
 function isHiddenDetailKey(key: string, value: unknown): boolean {
@@ -302,16 +302,16 @@ function isHiddenDetailKey(key: string, value: unknown): boolean {
     key === 'version' ||
     key.endsWith('Id') ||
     (typeof value === 'string' && UUID_PATTERN.test(value))
-  );
+  )
 }
 
 function compactReference(value: Record<string, unknown>): ReactNode {
-  const parts = [value.code, value.name].filter(Boolean).map(String);
+  const parts = [value.code, value.name].filter(Boolean).map(String)
   return parts.length ? (
     <span className="record-detail-reference">{[...new Set(parts)].join(' · ')}</span>
   ) : (
     <span className="muted">—</span>
-  );
+  )
 }
 
 function detailEntries(value: Record<string, unknown>) {
@@ -322,27 +322,27 @@ function detailEntries(value: Record<string, unknown>) {
       item != null &&
       item !== '' &&
       (!Array.isArray(item) || item.length > 0),
-  );
+  )
 }
 
 function detailValue(value: unknown, key?: string): ReactNode {
-  if (value == null || value === '') return <span className="muted">—</span>;
+  if (value == null || value === '') return <span className="muted">—</span>
   if (Array.isArray(value)) {
-    if (!value.length) return <span className="muted">—</span>;
+    if (!value.length) return <span className="muted">—</span>
     return (
       <ol className="record-detail-array">
         {value.map((item, index) => (
           <li key={index}>{detailValue(item, key)}</li>
         ))}
       </ol>
-    );
+    )
   }
   if (typeof value === 'object') {
     if (key === 'batch' && 'batchNo' in value) {
-      return <span className="record-detail-reference">{String(value.batchNo)}</span>;
+      return <span className="record-detail-reference">{String(value.batchNo)}</span>
     }
     if (key && COMPACT_REFERENCE_KEYS.has(key)) {
-      return compactReference(value as Record<string, unknown>);
+      return compactReference(value as Record<string, unknown>)
     }
     return (
       <dl className="record-detail-nested">
@@ -353,25 +353,25 @@ function detailValue(value: unknown, key?: string): ReactNode {
           </Fragment>
         ))}
       </dl>
-    );
+    )
   }
-  if (typeof value === 'boolean') return value ? '是' : '否';
-  if (key === 'action') return auditActionLabel(value);
+  if (typeof value === 'boolean') return value ? '是' : '否'
+  if (key === 'action') return auditActionLabel(value)
   if (key && DATE_ONLY_KEYS.has(key)) {
-    return formatDate(value);
+    return formatDate(value)
   }
   if (key && MONEY_KEYS.has(key) && !Number.isNaN(Number(value))) {
-    const amount = Number(value);
+    const amount = Number(value)
     return `${amount < 0 ? '-' : ''}¥${Math.abs(amount).toLocaleString('zh-CN', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })}`;
+    })}`
   }
-  if (key === 'weight' && !Number.isNaN(Number(value))) return `${value} g`;
+  if (key === 'weight' && !Number.isNaN(Number(value))) return `${value} g`
   if ((key === 'size' || key === 'fileSize') && !Number.isNaN(Number(value))) {
-    return `${(Number(value) / 1024).toLocaleString('zh-CN', { maximumFractionDigits: 2 })} KB`;
+    return `${(Number(value) / 1024).toLocaleString('zh-CN', { maximumFractionDigits: 2 })} KB`
   }
-  return displayValue(value);
+  return displayValue(value)
 }
 
 function DefaultDetail({
@@ -379,16 +379,16 @@ function DefaultDetail({
   columns,
   hiddenKeys = [],
 }: {
-  row: MasterRow;
-  columns: DataTableColumn[];
-  hiddenKeys?: string[];
+  row: MasterRow
+  columns: DataTableColumn[]
+  hiddenKeys?: string[]
 }) {
-  const labels = Object.fromEntries(columns.map((column) => [column.key, column.label]));
+  const labels = Object.fromEntries(columns.map((column) => [column.key, column.label]))
   const visibleKeys = new Set([
     ...columns.map((column) => column.key.split('.')[0]),
     ...DETAIL_EXTRA_KEYS,
-  ]);
-  if ('account' in row && 'allocations' in row) visibleKeys.add('allocations');
+  ])
+  if ('account' in row && 'allocations' in row) visibleKeys.add('allocations')
   const entries = Object.entries(row).filter(
     ([key, value]) =>
       visibleKeys.has(key) &&
@@ -397,13 +397,13 @@ function DefaultDetail({
       value != null &&
       value !== '' &&
       (!Array.isArray(value) || value.length > 0),
-  );
+  )
   const scalarEntries = entries.filter(
     ([, value]) => !Array.isArray(value) && typeof value !== 'object',
-  );
+  )
   const nestedEntries = entries.filter(
     ([, value]) => Array.isArray(value) || typeof value === 'object',
-  );
+  )
 
   return (
     <div className="record-detail-layout">
@@ -424,7 +424,7 @@ function DefaultDetail({
         </section>
       ))}
     </div>
-  );
+  )
 }
 
 export function DataTable({
@@ -445,26 +445,26 @@ export function DataTable({
   renderDetail,
   detailHiddenKeys,
 }: {
-  rows: MasterRow[];
-  columns: DataTableColumn[];
-  meta?: PageMeta;
-  loading: boolean;
-  error?: string;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-  onSort: (key: string) => void;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
-  onSelectionChange?: (ids: string[]) => void;
-  actions?: (row: MasterRow) => ReactNode;
-  onRowClick?: (row: MasterRow) => void;
-  activeRowId?: string;
-  renderDetail?: (row: MasterRow, close: () => void) => ReactNode;
-  detailHiddenKeys?: string[];
+  rows: MasterRow[]
+  columns: DataTableColumn[]
+  meta?: PageMeta
+  loading: boolean
+  error?: string
+  sortBy: string
+  sortOrder: 'asc' | 'desc'
+  onSort: (key: string) => void
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
+  onSelectionChange?: (ids: string[]) => void
+  actions?: (row: MasterRow) => ReactNode
+  onRowClick?: (row: MasterRow) => void
+  activeRowId?: string
+  renderDetail?: (row: MasterRow, close: () => void) => ReactNode
+  detailHiddenKeys?: string[]
 }) {
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [detailRow, setDetailRow] = useState<MasterRow>();
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [detailRow, setDetailRow] = useState<MasterRow>()
   const detailHeading = detailRow
     ? [
         UUID_PATTERN.test(String(detailRow.code))
@@ -477,7 +477,7 @@ export function DataTable({
         .filter(Boolean)
         .filter((value, index, values) => values.indexOf(value) === index)
         .join(' · ')
-    : '';
+    : ''
   const tableColumns: ColumnDef<MasterRow>[] = [
     {
       id: 'select',
@@ -549,8 +549,8 @@ export function DataTable({
           <button
             aria-label={`查看 ${row.original.name}`}
             onClick={(event) => {
-              event.stopPropagation();
-              setDetailRow(row.original);
+              event.stopPropagation()
+              setDetailRow(row.original)
             }}
             type="button"
           >
@@ -560,7 +560,7 @@ export function DataTable({
         </div>
       ),
     },
-  ];
+  ]
 
   const table = useReactTable({
     data: rows,
@@ -575,16 +575,16 @@ export function DataTable({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: { columnVisibility, rowSelection },
-  });
+  })
 
   useEffect(() => {
-    onSelectionChange?.(Object.keys(rowSelection).filter((id) => rowSelection[id]));
-  }, [onSelectionChange, rowSelection]);
+    onSelectionChange?.(Object.keys(rowSelection).filter((id) => rowSelection[id]))
+  }, [onSelectionChange, rowSelection])
 
-  const rowIds = rows.map((row) => row.id).join('\u0000');
+  const rowIds = rows.map((row) => row.id).join('\u0000')
   useEffect(() => {
-    setRowSelection((current) => (Object.keys(current).length ? {} : current));
-  }, [meta?.page, rowIds]);
+    setRowSelection((current) => (Object.keys(current).length ? {} : current))
+  }, [meta?.page, rowIds])
 
   return (
     <div className="data-table-shell">
@@ -646,9 +646,9 @@ export function DataTable({
                     }
                     key={row.id}
                     onKeyDown={(event) => {
-                      if (!onRowClick || (event.key !== 'Enter' && event.key !== ' ')) return;
-                      event.preventDefault();
-                      onRowClick(row.original);
+                      if (!onRowClick || (event.key !== 'Enter' && event.key !== ' ')) return
+                      event.preventDefault()
+                      onRowClick(row.original)
                     }}
                     onClick={() => onRowClick?.(row.original)}
                     tabIndex={onRowClick ? 0 : undefined}
@@ -744,5 +744,5 @@ export function DataTable({
         </Button>
       </footer>
     </div>
-  );
+  )
 }

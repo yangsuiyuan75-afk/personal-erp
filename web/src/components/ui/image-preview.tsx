@@ -1,18 +1,18 @@
-import Lightbox from 'yet-another-react-lightbox';
-import Zoom from 'yet-another-react-lightbox/plugins/zoom';
-import 'yet-another-react-lightbox/styles.css';
-import { useState } from 'react';
+import Lightbox from 'yet-another-react-lightbox'
+import Zoom from 'yet-another-react-lightbox/plugins/zoom'
+import 'yet-another-react-lightbox/styles.css'
+import { useState } from 'react'
 
 export function ImagePreview({
   alt,
   className,
   src,
 }: {
-  alt: string;
-  className?: string;
-  src: string;
+  alt: string
+  className?: string
+  src: string
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
   return (
     <>
@@ -20,8 +20,8 @@ export function ImagePreview({
         aria-label={`预览 ${alt}`}
         className={`image-preview-trigger ${className ?? ''}`}
         onClick={(event) => {
-          event.stopPropagation();
-          setOpen(true);
+          event.stopPropagation()
+          setOpen(true)
         }}
         type="button"
       >
@@ -29,5 +29,5 @@ export function ImagePreview({
       </button>
       <Lightbox close={() => setOpen(false)} open={open} plugins={[Zoom]} slides={[{ alt, src }]} />
     </>
-  );
+  )
 }

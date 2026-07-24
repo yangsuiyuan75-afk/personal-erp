@@ -1,15 +1,15 @@
-import { DatePicker } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
-import { cn } from '@/lib/utils';
+import { DatePicker } from 'antd'
+import dayjs, { type Dayjs } from 'dayjs'
+import { cn } from '@/lib/utils'
 
-type PickerMode = 'date' | 'month';
+type PickerMode = 'date' | 'month'
 
-export const today = () => dayjs().format('YYYY-MM-DD');
-export const thisMonth = () => dayjs().format('YYYY-MM');
+export const today = () => dayjs().format('YYYY-MM-DD')
+export const thisMonth = () => dayjs().format('YYYY-MM')
 
 function pickerDate(value?: string, length = 10): Dayjs | null {
-  const selected = value ? dayjs(value.slice(0, length)) : null;
-  return selected?.isValid() ? selected : null;
+  const selected = value ? dayjs(value.slice(0, length)) : null
+  return selected?.isValid() ? selected : null
 }
 
 export function DatePickerInput({
@@ -22,7 +22,7 @@ export function DatePickerInput({
   React.ComponentProps<typeof DatePicker>,
   'format' | 'onChange' | 'picker' | 'placeholder' | 'value'
 > & { mode?: PickerMode; onChange: (value: string) => void; value?: string }) {
-  const format = mode === 'month' ? 'YYYY-MM' : 'YYYY-MM-DD';
+  const format = mode === 'month' ? 'YYYY-MM' : 'YYYY-MM-DD'
 
   return (
     <DatePicker
@@ -35,7 +35,7 @@ export function DatePickerInput({
       {...props}
       autoComplete="off"
     />
-  );
+  )
 }
 
 export function DateRangePickerInput({
@@ -47,13 +47,13 @@ export function DateRangePickerInput({
   React.ComponentProps<typeof DatePicker.RangePicker>,
   'format' | 'onChange' | 'placeholder' | 'value'
 > & {
-  onChange: (from?: string, to?: string) => void;
-  value?: [string | undefined, string | undefined];
+  onChange: (from?: string, to?: string) => void
+  value?: [string | undefined, string | undefined]
 }) {
   const selected =
     value?.[0] || value?.[1]
       ? ([pickerDate(value?.[0]), pickerDate(value?.[1])] as [Dayjs | null, Dayjs | null])
-      : null;
+      : null
 
   return (
     <DatePicker.RangePicker
@@ -65,5 +65,5 @@ export function DateRangePickerInput({
       {...props}
       autoComplete="off"
     />
-  );
+  )
 }

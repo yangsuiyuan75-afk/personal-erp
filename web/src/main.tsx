@@ -1,8 +1,8 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { App } from '@/app/app';
-import { AppProviders } from '@/app/providers/app-providers';
-import '@/styles/index.css';
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { App } from '@/app/app'
+import { AppProviders } from '@/app/providers/app-providers'
+import '@/styles/index.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -10,4 +10,4 @@ createRoot(document.getElementById('root')!).render(
       <App />
     </AppProviders>
   </StrictMode>,
-);
+)
